@@ -2901,12 +2901,25 @@ const renderSight = () => {
     askBar = true;                       // which bar? one tap, then move on
     renderSight();
   };
-  v.querySelectorAll('[data-bar]').forEach(b => b.onclick = () => {
-    const idx = b.dataset.bar;
+  let barLocked = false;
+  const finishStumble = idx => {
     if (idx !== 'skip') recordStumble(mel, +idx);
     askBar = false;
     prevMel = mel; lastVerdict = 'stumble';
     newMelody(); renderSight(); renderNow();
+  };
+  const activateBar = b => {
+    if (barLocked) return;
+    barLocked = true;
+    v.querySelectorAll('[data-bar]').forEach(other => { other.disabled = true; });
+    b.classList.add('flash');
+    setTimeout(() => finishStumble(b.dataset.bar), 250);
+  };
+  v.querySelectorAll('[data-bar]').forEach(b => {
+    b.onclick = () => activateBar(b);
+    b.onkeydown = e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); activateBar(b); }
+    };
   });
   const keep = document.getElementById('keeplast');
   if (keep) keep.onclick = () => {
