@@ -194,11 +194,11 @@ const blank = () => ({
 // Three tiers. Inside a Claude artifact only window.storage exists; served from
 // a real origin only localStorage does. Without the second tier the app looked
 // like it was saving and silently lost everything on refresh.
-function localGet() {
+const localGet = () => {
   try { return window.localStorage && window.localStorage.getItem(KEY); }
   catch (e) { return null; }
 }
-function localSet(v) {
+const localSet = (v) => {
   try { if (window.localStorage) window.localStorage.setItem(KEY, v); }
   catch (e) { /* private mode, quota, or no storage at all */ }
 }
@@ -218,7 +218,7 @@ async function load() {
 }
 
 // older saves predate some fields
-function normalize(s) {
+const normalize = (s) => {
   s.drill = { ...blank().drill, ...(s.drill || {}) };
   if (!Array.isArray(s.drill.rounds)) s.drill.rounds = [];
   if (!Array.isArray(s.log)) s.log = [];
@@ -243,7 +243,7 @@ function normalize(s) {
   return s;
 }
 let saveTimer = null;
-function save() {
+const save = () => {
   fallback[KEY] = S;
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async () => {
@@ -259,7 +259,7 @@ const SEMI = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
 const midiOf = d => (octOf(d) + 1) * 12 + SEMI[letterOf(d)];
 let ctx = null, audioReady = false;
 
-function ensureCtx() {
+const ensureCtx = () => {
   if (!ctx) {
     const AC = window.AudioContext || window.webkitAudioContext;
     if (!AC) return null;
@@ -281,7 +281,7 @@ let silentEl = null;
 
 let capturing = false;   // true while the microphone is open
 
-function armAudioSession() {
+const armAudioSession = () => {
   // 'playback' refuses audio capture outright, so recording needs its own type
   const want = capturing ? 'play-and-record'
              : (S && S.ignoreSilent === false) ? 'auto' : 'playback';
@@ -294,7 +294,7 @@ function armAudioSession() {
   return false;
 }
 
-function nudgeSilent() {
+const nudgeSilent = () => {
   if (capturing) { if (silentEl) silentEl.pause(); return; }
   if (S && S.ignoreSilent === false) { if (silentEl) silentEl.pause(); return; }
   try {
@@ -310,7 +310,7 @@ function nudgeSilent() {
 
 // iOS also leaves the context suspended until audio is produced inside a real
 // gesture, so every touch re-arms everything. Cheap, and idempotent.
-function unlockAudio() {
+const unlockAudio = () => {
   armAudioSession();
   nudgeSilent();
   const c = ensureCtx();
@@ -340,7 +340,7 @@ const WAV_RATE = 22050;
 // e.len is how long the note is HELD, in seconds. Without it every note rang
 // for the same 1.5s and the written rhythm was inaudible.
 const RELEASE = 0.28;
-function renderNotes(events, rate) {
+const renderNotes = (events, rate) => {
   rate = rate || WAV_RATE;
   const held = e => Math.max(0.12, e.len === undefined ? 1.2 : e.len);
   const end = events.reduce((a, e) => Math.max(a, e.at + held(e) + RELEASE), 0.3) + 0.1;
@@ -369,7 +369,7 @@ function renderNotes(events, rate) {
   return out;
 }
 
-function encodeWav(samples, rate) {
+const encodeWav = (samples, rate) => {
   rate = rate || WAV_RATE;
   const n = samples.length;
   const buf = new ArrayBuffer(44 + n * 2);
@@ -390,7 +390,7 @@ function encodeWav(samples, rate) {
 
 let lastUrl = null, elAudio = null;
 
-function playViaElement(events) {
+const playViaElement = (events) => {
   try {
     const pcm = renderNotes(events);
     const buf = encodeWav(pcm);
@@ -414,7 +414,7 @@ function playViaElement(events) {
 let lastError = '';
 // true when the page cannot control its own audio category — i.e. an in-app
 // WebView, or any iOS browser without the AudioSession API
-function needsElementAudio() {
+const needsElementAudio = () => {
   if (S && S.engine === 'element') return true;
   if (S && S.engine === 'webaudio') return false;
   const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
@@ -424,7 +424,7 @@ function needsElementAudio() {
 }
 
 // single entry point for anything that makes a sound
-function playEvents(events) {
+const playEvents = (events) => {
   if (!events || !events.length) return;
   if (S && S.muted) return;
   if (needsElementAudio() && playViaElement(events)) return;
@@ -434,7 +434,7 @@ function playEvents(events) {
 // `when` is seconds from now. Everything is scheduled on the audio clock rather
 // than with setTimeout, so a whole melody is created inside the tap that asked
 // for it — which is the only thing iOS will allow.
-function play(midi, when, len) {
+const play = (midi, when, len) => {
   if (S && S.muted) return;
   const c = ensureCtx();
   if (!c) return;
@@ -464,7 +464,7 @@ function play(midi, when, len) {
     });
 }
 
-function audioDiagnostics() {
+const audioDiagnostics = () => {
   const nav = typeof navigator !== 'undefined' ? navigator : {};
   const ua = nav.userAgent || '';
   let sessionType = 'not supported';
@@ -488,7 +488,7 @@ function audioDiagnostics() {
       <td style="padding:3px 0;font-family:ui-monospace,monospace">${v}</td></tr>`).join('')}</table>`;
 }
 
-function audioHint() {
+const audioHint = () => {
   if (audioReady || (S && S.muted)) return '';
   return `<p style="font-size:13px;color:var(--red);max-width:56ch;margin-top:8px">
     No sound yet. On an iPhone the side switch silences web audio even when the
@@ -534,14 +534,14 @@ const yOf = d => d >= MIDDLE_C ? 70 - (d - 30) * 5 : 90 - (d - 26) * 5;
 // lines at 590.5-unit spacing, so the transforms below are derived rather than
 // eyeballed: the treble spiral centres exactly on G4 (y=60) and the bass bulb
 // sits on F3 (y=100) with its dots straddling that line.
-function clefs() {
+const clefs = () => {
   return `<g transform="translate(-0.085,-78.002) scale(0.016935)">
       <path fill="var(--ink)" fill-rule="evenodd" d="M 2002,7851 C 1941,7868 1886,7906 1835,7964 C 1784,8023 1759,8088 1759,8158 C 1759,8202 1774,8252 1803,8305 C 1832,8359 1876,8398 1933,8423 C 1952,8427 1961,8437 1961,8451 C 1961,8456 1954,8461 1937,8465 C 1846,8442 1771,8393 1713,8320 C 1655,8246 1625,8162 1623,8066 C 1626,7963 1657,7867 1716,7779 C 1776,7690 1853,7627 1947,7590 L 1878,7235 C 1724,7363 1599,7496 1502,7636 C 1405,7775 1355,7926 1351,8089 C 1353,8162 1368,8233 1396,8301 C 1424,8370 1466,8432 1522,8489 C 1635,8602 1782,8661 1961,8667 C 2022,8663 2087,8652 2157,8634 L 2002,7851 z M 2074,7841 L 2230,8610 C 2384,8548 2461,8413 2461,8207 C 2452,8138 2432,8076 2398,8021 C 2365,7965 2321,7921 2265,7889 C 2209,7857 2146,7841 2074,7841 z M 1869,6801 C 1902,6781 1940,6746 1981,6697 C 2022,6649 2062,6592 2100,6528 C 2139,6463 2170,6397 2193,6330 C 2216,6264 2227,6201 2227,6143 C 2227,6118 2225,6093 2220,6071 C 2216,6035 2205,6007 2186,5988 C 2167,5970 2143,5960 2113,5960 C 2053,5960 1999,5997 1951,6071 C 1914,6135 1883,6211 1861,6297 C 1838,6384 1825,6470 1823,6557 C 1828,6656 1844,6737 1869,6801 z M 1806,6859 C 1761,6697 1736,6532 1731,6364 C 1732,6256 1743,6155 1764,6061 C 1784,5967 1813,5886 1851,5816 C 1888,5746 1931,5693 1979,5657 C 2022,5625 2053,5608 2070,5608 C 2083,5608 2094,5613 2104,5622 C 2114,5631 2127,5646 2143,5666 C 2262,5835 2322,6039 2322,6277 C 2322,6390 2307,6500 2277,6610 C 2248,6719 2205,6823 2148,6920 C 2090,7018 2022,7103 1943,7176 L 2024,7570 C 2068,7565 2098,7561 2115,7561 C 2191,7561 2259,7577 2322,7609 C 2385,7641 2439,7684 2483,7739 C 2527,7793 2561,7855 2585,7925 C 2608,7995 2621,8068 2621,8144 C 2621,8262 2590,8370 2528,8467 C 2466,8564 2373,8635 2248,8681 C 2256,8730 2270,8801 2291,8892 C 2311,8984 2326,9057 2336,9111 C 2346,9165 2350,9217 2350,9268 C 2350,9347 2331,9417 2293,9479 C 2254,9541 2202,9589 2136,9623 C 2071,9657 1999,9674 1921,9674 C 1811,9674 1715,9643 1633,9582 C 1551,9520 1507,9437 1503,9331 C 1506,9284 1517,9240 1537,9198 C 1557,9156 1584,9122 1619,9096 C 1653,9069 1694,9055 1741,9052 C 1780,9052 1817,9063 1852,9084 C 1886,9106 1914,9135 1935,9172 C 1955,9209 1966,9250 1966,9294 C 1966,9353 1946,9403 1906,9444 C 1866,9485 1815,9506 1754,9506 L 1731,9506 C 1770,9566 1834,9597 1923,9597 C 1968,9597 2014,9587 2060,9569 C 2107,9550 2146,9525 2179,9493 C 2212,9461 2234,9427 2243,9391 C 2260,9350 2268,9293 2268,9222 C 2268,9174 2263,9126 2254,9078 C 2245,9031 2231,8968 2212,8890 C 2193,8813 2179,8753 2171,8712 C 2111,8727 2049,8735 1984,8735 C 1875,8735 1772,8713 1675,8668 C 1578,8623 1493,8561 1419,8481 C 1346,8401 1289,8311 1248,8209 C 1208,8108 1187,8002 1186,7892 C 1190,7790 1209,7692 1245,7600 C 1281,7507 1327,7419 1384,7337 C 1441,7255 1500,7180 1561,7113 C 1623,7047 1704,6962 1806,6859 z"/></g>
     <g transform="translate(-0.982,-18.002) scale(0.016935)">
       <path fill="var(--ink)" fill-rule="evenodd" d="M 1239,8245 C 1397,8138 1515,8057 1591,8001 C 1667,7946 1747,7877 1829,7795 C 1911,7713 1980,7620 2036,7517 C 2080,7441 2118,7353 2149,7253 C 2180,7154 2196,7058 2199,6967 C 2199,6882 2188,6801 2165,6725 C 2143,6648 2105,6585 2051,6534 C 1997,6484 1927,6459 1840,6459 C 1756,6459 1677,6476 1603,6509 C 1530,6543 1478,6597 1449,6673 C 1449,6680 1445,6689 1439,6702 C 1441,6718 1449,6730 1464,6739 C 1479,6748 1492,6752 1504,6752 C 1510,6752 1527,6749 1553,6743 C 1580,6737 1602,6733 1620,6733 C 1673,6733 1720,6752 1763,6789 C 1805,6826 1826,6871 1826,6924 C 1826,6962 1815,6998 1794,7031 C 1773,7064 1744,7091 1707,7110 C 1670,7130 1629,7139 1585,7139 C 1505,7139 1437,7115 1381,7066 C 1326,7016 1298,6953 1298,6874 C 1298,6773 1329,6686 1390,6612 C 1452,6538 1530,6483 1626,6446 C 1721,6408 1817,6390 1915,6390 C 2022,6390 2124,6417 2219,6472 C 2315,6526 2390,6601 2446,6694 C 2502,6788 2531,6888 2531,6996 C 2531,7188 2467,7366 2339,7531 C 2211,7696 2053,7839 1864,7961 C 1738,8044 1534,8156 1253,8297 L 1239,8245 z M 2628,6698 C 2628,6662 2641,6632 2667,6608 C 2692,6583 2723,6571 2760,6571 C 2792,6571 2822,6585 2849,6612 C 2876,6638 2889,6669 2889,6703 C 2889,6739 2875,6770 2849,6795 C 2821,6819 2790,6831 2755,6831 C 2718,6831 2688,6819 2664,6792 C 2640,6766 2628,6735 2628,6698 z M 2628,7222 C 2628,7186 2641,7155 2665,7131 C 2690,7106 2721,7094 2760,7094 C 2792,7094 2821,7107 2849,7134 C 2875,7161 2889,7190 2889,7222 C 2889,7261 2876,7292 2851,7317 C 2825,7342 2795,7355 2760,7355 C 2721,7355 2690,7342 2665,7318 C 2641,7294 2628,7262 2628,7222 z"/></g>`;
 }
 
-function keySigStaffSVG(key, state) {
+const keySigStaffSVG = (key, state) => {
   const colour = state === 'ok' ? 'var(--blue)' : state === 'no' ? 'var(--red)' : 'var(--ink)';
   let lines = '';
   for (let i = 0; i < 5; i++) {
@@ -558,7 +558,7 @@ function keySigStaffSVG(key, state) {
     ${clefs()}${sig}${none}</svg>`;
 }
 
-function staffSVG(d, state) {
+const staffSVG = (d, state) => {
   const noteX = 250;
   const y = d === null ? 0 : yOf(d);
   const colour = state === 'ok' ? 'var(--blue)' : state === 'no' ? 'var(--red)' : 'var(--ink)';
@@ -586,7 +586,7 @@ function staffSVG(d, state) {
 
 // ---------- progress spine ----------
 // One note per step of the ladder, ascending. Filled where cleared.
-function renderSpine() {
+const renderSpine = () => {
   const total = STEPS.length;
   const cleared = STEPS.filter((_, i) => stepPassed(i)).length;
   const cur = stepIndex();
@@ -616,7 +616,7 @@ function renderSpine() {
 // switch, and a looping element does that where scheduled Web Audio does not.
 let metroEl = null, metroUrl = null, metroBpm = 84, metroOn = false, metroBars = 8;
 
-function renderClickTrack(bpm, bars) {
+const renderClickTrack = (bpm, bars) => {
   const rate = WAV_RATE, spb = 60 / bpm;
   const n = Math.round(bars * 4 * spb * rate);
   const out = new Float32Array(n);
@@ -634,7 +634,7 @@ function renderClickTrack(bpm, bars) {
   return out;
 }
 
-function startMetro() {
+const startMetro = () => {
   try {
     const buf = encodeWav(renderClickTrack(metroBpm, metroBars));
     if (metroUrl) URL.revokeObjectURL(metroUrl);
@@ -647,14 +647,14 @@ function startMetro() {
   } catch (e) { metroOn = false; }
 }
 
-function stopMetro() {
+const stopMetro = () => {
   if (metroEl) { metroEl.pause(); metroEl.currentTime = 0; }
   metroOn = false;
 }
 
 // tap tempo: median of the gaps, which ignores one bad tap in a way a mean does not
 let taps = [];
-function tapTempo() {
+const tapTempo = () => {
   const now = Date.now();
   taps = taps.filter(t => now - t < 3000);
   taps.push(now);
@@ -670,7 +670,7 @@ function tapTempo() {
 const TEMPO_MARKS = [[0,'Grave'],[46,'Adagio'],[60,'Andante'],[80,'Moderato'],[110,'Allegro'],[150,'Presto']];
 const tempoMark = b => TEMPO_MARKS.filter(t => b >= t[0]).pop()[1];
 
-function metronomeHTML() {
+const metronomeHTML = () => {
   return `<div style="border-top:1px solid var(--rule);margin-top:26px;padding-top:16px">
     <p class="eyebrow">Metronome</p>
     <div class="row" style="align-items:baseline">
@@ -690,7 +690,7 @@ function metronomeHTML() {
   </div>`;
 }
 
-function wireMetronome(root) {
+const wireMetronome = (root) => {
   const paint = () => {
     const v = document.getElementById('bpmval'), m = document.getElementById('bpmmark');
     if (v) v.textContent = metroBpm;
@@ -720,7 +720,7 @@ let ticker = null;
 const slotSpent = s => s.spent + (s.running && s.startedAt ? (Date.now() - s.startedAt) / 1000 : 0);
 const slotLeft = s => Math.max(0, Math.round(s.total - slotSpent(s)));
 
-function renderPractice() {
+const renderPractice = () => {
   const v = document.getElementById('view');
   if (!S.session) {
     v.innerHTML = `
@@ -773,7 +773,7 @@ function renderPractice() {
   wireMetronome(v);
 }
 
-function startSession(mins) {
+const startSession = (mins) => {
   S.session = {
     mins,
     slots: PLANS[mins].map(([id, m]) => ({ id, total: m * 60, spent: 0, running: false, startedAt: null, done: false }))
@@ -781,11 +781,11 @@ function startSession(mins) {
   save(); render();
 }
 
-function pauseSlot(x) {
+const pauseSlot = (x) => {
   if (x.running) { x.spent = slotSpent(x); x.running = false; x.startedAt = null; }
 }
 
-function toggleSlot(i) {
+const toggleSlot = (i) => {
   const s = S.session;
   const wasRunning = s.slots[i].running;
   s.slots.forEach(pauseSlot);
@@ -794,7 +794,7 @@ function toggleSlot(i) {
   save(); renderPractice();
 }
 
-function finishSlot(i) {
+const finishSlot = (i) => {
   const x = S.session.slots[i];
   pauseSlot(x);
   x.done = true;
@@ -802,7 +802,7 @@ function finishSlot(i) {
   save(); renderPractice();
 }
 
-function startTicker() {
+const startTicker = () => {
   stopTicker();
   ticker = setInterval(() => {
     const s = S.session; if (!s) return stopTicker();
@@ -813,9 +813,9 @@ function startTicker() {
     if (slotLeft(s.slots[i]) <= 0) { finishSlot(i); save(); }
   }, 500);
 }
-function stopTicker() { clearInterval(ticker); ticker = null; }
+const stopTicker = () => { clearInterval(ticker); ticker = null; }
 
-function endSession() {
+const endSession = () => {
   const s = S.session;
   s.slots.forEach(pauseSlot);
   const spent = s.slots.reduce((a, x) => a + Math.min(x.total, x.spent), 0);
@@ -839,14 +839,14 @@ const ROUND_LEN = 20;
 // that naming out loud does not, so the two modes get different benchmarks.
 const TARGET = { name: 1.5, find: 3.0, key: 3.0 };
 
-function startRound() {
+const startRound = () => {
   drill.round = { n: 0, correct: 0, secs: 0 };
   drill.done = false;
   drill.d = null;
   newQuestion();
 }
 
-function advance() {
+const advance = () => {
   if (drill.round.n >= ROUND_LEN) {
     drill.done = true;
     const per = drill.round.secs / ROUND_LEN;
@@ -880,7 +880,7 @@ function advance() {
   renderReading();
 }
 
-function newQuestion() {
+const newQuestion = () => {
   if (drill.mode === 'key') {
     let i;
     do { i = Math.floor(Math.random() * KEYS.length); } while (i === drill.keyIdx);
@@ -893,7 +893,7 @@ function newQuestion() {
   drill.state = null; drill.t0 = Date.now();
 }
 
-function landmarkSVG() {
+const landmarkSVG = () => {
   const marks = [
     { d: dOf('C', 3), label: 'Bass C' },
     { d: dOf('F', 3), label: 'Bass F' },
@@ -927,7 +927,7 @@ const LANDMARK_NOTES = [
   ['Bass C', 'Second space up in the bass staff, an octave below middle C.']
 ];
 
-function renderReading() {
+const renderReading = () => {
   if (!drill.round) startRound();
   const v = document.getElementById('view');
   const st = S.drill;
@@ -1038,7 +1038,7 @@ function renderReading() {
   }
 }
 
-function verdictText() {
+const verdictText = () => {
   if (drill.mode === 'key') {
     const k = KEYS[drill.keyIdx];
     if (drill.state === 'ok') return `Yes \u2014 or ${k.relName} minor, same signature.`;
@@ -1051,24 +1051,24 @@ function verdictText() {
 }
 
 // the two rules, stated for the key just missed
-function keyRule(k) {
+const keyRule = (k) => {
   if (!k.sharps && !k.flats) return 'no sharps or flats is C major.';
   if (k.sharps) return `last sharp is ${SHARP_ORDER[k.sharps - 1]}\u266f, and the key is one semitone above it.`;
   if (k.flats === 1) return 'a single flat is always F major.';
   return `second-to-last flat is ${FLAT_ORDER[k.flats - 2]}, and that names the key.`;
 }
 
-function keyNamesHTML() {
+const keyNamesHTML = () => {
   return `<div class="letters">${KEYS.map(k =>
     `<button class="btn" style="width:auto;padding:0 14px" data-answer="${k.name}">${k.name}</button>`).join('')}</div>`;
 }
 
-function lettersHTML() {
+const lettersHTML = () => {
   return `<div class="letters">${LETTERS.map(l =>
     `<button class="btn" data-answer="${l}">${l}</button>`).join('')}</div>`;
 }
 
-function keyboardHTML() {
+const keyboardHTML = () => {
   const whites = [];
   for (let d = dOf('C', 3); d <= dOf('C', 5); d++) whites.push(d);
   const W = 40;
@@ -1086,7 +1086,7 @@ function keyboardHTML() {
   return `<div class="kb"><div class="kbinner" style="width:${whites.length * W}px">${html}</div></div>`;
 }
 
-function answer(val, btn) {
+const answer = (val, btn) => {
   if (drill.state) { advance(); return; }
   const correct = drill.mode === 'find' ? String(drill.d) === val
     : drill.mode === 'key' ? KEYS[drill.keyIdx].name === val
@@ -1124,7 +1124,7 @@ function answer(val, btn) {
   }
 }
 
-function renderVerdictOnly() {
+const renderVerdictOnly = () => {
   const vd = document.getElementById('verdict');
   vd.textContent = verdictText();
   vd.className = 'verdict ' + (drill.state === 'ok' ? 'ok' : 'no');
@@ -1136,7 +1136,7 @@ function renderVerdictOnly() {
   }
 }
 
-function weakSpots() {
+const weakSpots = () => {
   const rows = Object.entries(S.drill.perNote)
     .filter(([, v]) => v.a >= 4 && v.r / v.a < 0.8)
     .sort((a, b) => a[1].r / a[1].a - b[1].r / b[1].a).slice(0, 5);
@@ -1148,7 +1148,7 @@ function weakSpots() {
 
 // ---------- stages ----------
 
-function referenceBody() {
+const referenceBody = () => {
   return `
     <p class="lbl" style="font-size:11px;letter-spacing:.07em;text-transform:uppercase;color:var(--soft);margin:14px 0 4px">Bass clef by landmark, not mnemonic</p>
     <ul>
@@ -1200,12 +1200,12 @@ function referenceBody() {
   `;
 }
 
-function referenceHTML() {
+const referenceHTML = () => {
   return `<details class="ref"><summary>Reference \u2014 landmarks, fingering, practice rules</summary>${referenceBody()}</details>`;
 }
 
 // ---------- log ----------
-function renderLog(targetId) {
+const renderLog = (targetId) => {
   const v = document.getElementById(targetId || 'view');
   const byDay = {};
   S.log.forEach(e => byDay[e.date] = (byDay[e.date] || 0) + e.mins);
@@ -1334,7 +1334,7 @@ const MINOR_OK = ['C','G','D','F','B\u266d','E\u266d'];
 // which reads as "it keeps giving me the same one" because it does.
 let keyBag = [], keyBagPool = '', lastKeyDrawn = null;
 
-function drawKey(pool) {
+const drawKey = (pool) => {
   if (pool.length === 1) return pool[0];
   const sig = pool.join(',');
   if (sig !== keyBagPool || !keyBag.length) {
@@ -1355,27 +1355,27 @@ function drawKey(pool) {
 
 const keyByName = n => KEYS.find(k => k.name === n) || KEYS[0];
 
-function keyAlter(key) {
+const keyAlter = (key) => {
   const a = {};
   for (let i = 0; i < key.sharps; i++) a[SHARP_ORDER[i]] = 1;
   for (let i = 0; i < key.flats; i++)  a[FLAT_ORDER[i]] = -1;
   return a;
 }
 
-function sharpGlyph(x, y) {
+const sharpGlyph = (x, y) => {
   return `<g stroke="var(--ink)">
     <line x1="${x-2.7}" y1="${y-7}" x2="${x-2.7}" y2="${y+6}" stroke-width="1.1"/>
     <line x1="${x+2.7}" y1="${y-8}" x2="${x+2.7}" y2="${y+5}" stroke-width="1.1"/>
     <line x1="${x-5}" y1="${y+2}" x2="${x+5}" y2="${y-0.3}" stroke-width="2.5"/>
     <line x1="${x-5}" y1="${y-3.2}" x2="${x+5}" y2="${y-5.5}" stroke-width="2.5"/></g>`;
 }
-function flatGlyph(x, y) {
+const flatGlyph = (x, y) => {
   return `<g stroke="var(--ink)" fill="none">
     <line x1="${x-2.4}" y1="${y-12}" x2="${x-2.4}" y2="${y+4}" stroke-width="1.3"/>
     <path d="M ${x-2.4},${y-2.5} C ${x+4},${y-5.5} ${x+5},${y+2} ${x-2.4},${y+4}" stroke-width="1.7"/></g>`;
 }
 
-function naturalGlyph(x, y) {
+const naturalGlyph = (x, y) => {
   return `<g stroke="var(--ink)">
     <line x1="${x-2.6}" y1="${y-6}" x2="${x-2.6}" y2="${y+8}" stroke-width="1.2"/>
     <line x1="${x+2.6}" y1="${y-8}" x2="${x+2.6}" y2="${y+6}" stroke-width="1.2"/>
@@ -1383,12 +1383,12 @@ function naturalGlyph(x, y) {
     <line x1="${x-2.6}" y1="${y-3}" x2="${x+2.6}" y2="${y-5}" stroke-width="2.3"/></g>`;
 }
 // what to print in front of a raised 7th, given what the signature already did
-function accidentalGlyph(x, y, resulting) {
+const accidentalGlyph = (x, y, resulting) => {
   return resulting === 0 ? naturalGlyph(x, y)
        : resulting > 0 ? sharpGlyph(x, y) : flatGlyph(x, y);
 }
 
-function keySigSVG(key, clef, x0, markLast) {
+const keySigSVG = (key, clef, x0, markLast) => {
   const n = key.sharps || key.flats;
   if (!n) return '';
   const sharp = key.sharps > 0;
@@ -1418,7 +1418,7 @@ const RHYTHMS = {
   3: [[2,2], [2,1,1], [1,1,1,1], [1,0.5,0.5,2], [0.5,0.5,1,2], [1,1,0.5,0.5,1]]
 };
 
-function mulberry(seed) {
+const mulberry = (seed) => {
   return function () {
     seed |= 0; seed = seed + 0x6D2B79F5 | 0;
     let t = Math.imul(seed ^ seed >>> 15, 1 | seed);
@@ -1436,7 +1436,7 @@ function mulberry(seed) {
 // stretching finger 1 or 5, 2 = wide enough that the hand must shift.
 const REACH = { 0: [0, 0], 1: [1, 1], 2: [3, 3] };
 
-function genMelody(stage, seed, key, minor, opts) {
+const genMelody = (stage, seed, key, minor, opts) => {
   stage = Math.min(3, Math.max(1, stage));
   key = key || KEYS[0];
   minor = !!minor && MINOR_OK.includes(key.name);
@@ -1575,7 +1575,7 @@ const yBass   = d => 130 - (d - 18) * 5;
 const melKeyLabel = mel => mel.minor
   ? `${mel.key.relName} minor` : `${mel.key.name} major`;
 
-function melodySVG(mel, clefFn, mark) {
+const melodySVG = (mel, clefFn, mark) => {
   const hasT = !!mel.bars, hasB = !!mel.bass;
   const grand = hasT && hasB;
   // a lone bass staff is drawn in the upper slot, with the bass clef moved to it
@@ -1678,7 +1678,7 @@ function melodySVG(mel, clefFn, mark) {
     role="img" aria-label="Generated eight-bar sight-reading exercise in ${melKeyLabel(mel)}">${out}</svg>`;
 }
 
-function noteGlyph(x, y, dur, colour, withStem, mid) {
+const noteGlyph = (x, y, dur, colour, withStem, mid) => {
   const c = colour || 'var(--ink)';
   let s = '';
   if (dur < 4 && withStem !== false) {
@@ -1693,7 +1693,7 @@ function noteGlyph(x, y, dur, colour, withStem, mid) {
   return s;
 }
 
-function ledgers(x, d, yFn, staffTop, staffBottom) {
+const ledgers = (x, d, yFn, staffTop, staffBottom) => {
   let s = '', y = yFn(d);
   for (let ly = staffBottom + 10; ly <= y; ly += 10)
     s += `<line x1="${x - 13}" y1="${ly}" x2="${x + 13}" y2="${ly}" stroke="var(--ink)"/>`;
@@ -1703,7 +1703,7 @@ function ledgers(x, d, yFn, staffTop, staffBottom) {
 }
 
 // playback has to apply the key signature — the notation implies it, the synth doesn't
-function melodySeq(mel) {
+const melodySeq = (mel) => {
   const alter = keyAlter(mel.key);
   const pitch = n => midiOf(n.d) + (n.alt !== undefined ? n.alt : (alter[letterOf(n.d)] || 0));
   // either staff may be absent — one hand means one staff, and this assumed
@@ -1728,7 +1728,7 @@ function melodySeq(mel) {
 // ---------- naming a key from its signature ----------
 // the rules work because the last accidental always lands on a fixed scale
 // degree: the last sharp is the 7th, the last flat is the 4th.
-function namingFacts(key) {
+const namingFacts = (key) => {
   const n = key.sharps || key.flats;
   const sharp = key.sharps > 0;
   const letter = n ? (sharp ? SHARP_ORDER : FLAT_ORDER)[n - 1] : null;
@@ -1743,7 +1743,7 @@ function namingFacts(key) {
   };
 }
 
-function renderNaming(idx) {
+const renderNaming = (idx) => {
   const key = KEYS[idx];
   const f = namingFacts(key);
   const orderRow = f.n
@@ -1789,7 +1789,7 @@ function renderNaming(idx) {
     <p style="max-width:58ch;margin-top:18px">And the same signature is also <b>${key.relName} minor</b> \u2014 three semitones below ${key.name}. The signature alone can never tell you which of the two it is; only the last bass note and the stray accidentals can.</p>`;
 }
 
-function namingStaff(key) {
+const namingStaff = (key) => {
   let lines = '';
   for (let i = 0; i < 5; i++) {
     lines += `<line x1="12" y1="${30 + i * 10}" x2="250" y2="${30 + i * 10}" stroke="var(--rule)"/>`;
@@ -1801,7 +1801,7 @@ function namingStaff(key) {
     ${clefs()}${keySigSVG(key, 'treble', 48, true)}${keySigSVG(key, 'bass', 48, true)}</svg>`;
 }
 
-function wireNaming(root) {
+const wireNaming = (root) => {
   const key = KEYS[namingIdx];
   const f = namingFacts(key);
   root.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => {
@@ -1832,14 +1832,14 @@ const WHITE_PC = [0,2,4,5,7,9,11];
 const isWhite = m => WHITE_PC.includes(((m % 12) + 12) % 12);
 const PC_NAME = { 0:'C', 2:'D', 4:'E', 5:'F', 7:'G', 9:'A', 11:'B' };
 
-function nameWithAlt(letter, alt) {
+const nameWithAlt = (letter, alt) => {
   return letter + (alt > 0 ? '\u266f' : alt < 0 ? '\u266d' : '');
 }
 
 // small keyboard spanning lo..hi semitones, with specific notes called out.
 // labels sit inside the keys — three notes this close together collide if the
 // text hangs underneath.
-function miniKeys(lo, hi, marks) {
+const miniKeys = (lo, hi, marks) => {
   const W = 30, H = 100, BW = 18, BH = 62;
   const whites = [];
   for (let m = lo; m <= hi; m++) if (isWhite(m)) whites.push(m);
@@ -1872,11 +1872,11 @@ function miniKeys(lo, hi, marks) {
     aria-label="Keyboard showing the seventh and the tonic">${keys}${labels}</svg>`;
 }
 
-function playChord(midis, at) {              // kept for single-shot use
+const playChord = (midis, at) => {              // kept for single-shot use
   playEvents(midis.map(m => ({ midi: m, at: at || 0 })));
 }
 
-function raisedSeventhFacts(key) {
+const raisedSeventhFacts = (key) => {
   const alter = keyAlter(key);
   const tonicD = dOf(key.rel, 4);
   const sevD = tonicD - 1;
@@ -1895,7 +1895,7 @@ function raisedSeventhFacts(key) {
   };
 }
 
-function renderWhy(key) {
+const renderWhy = (key) => {
   const f = raisedSeventhFacts(key);
   const lo = f.natMidi - 3, hi = f.tonicMidi + 2;
   const marks = {};
@@ -1926,7 +1926,7 @@ function renderWhy(key) {
     ${f.printsNatural ? `<p style="max-width:58ch;margin-top:18px;font-size:14px">One wrinkle specific to ${f.tonicName} minor: the signature already flattened that note, so raising it is written as a <b>natural sign</b>, not a sharp. You are cancelling the signature, not sharpening past it.</p>` : ''}`;
 }
 
-function wireWhy(root, key) {
+const wireWhy = (root, key) => {
   const f = raisedSeventhFacts(key);
   const beat = 0.62;                          // seconds
   const chord = (roots, third) => roots.concat([]).map(r => r);
@@ -1953,14 +1953,14 @@ function wireWhy(root, key) {
 // Right hand counts up from the thumb; left hand counts down from the little
 // finger. A note one step outside the position is a stretch of the outer finger;
 // anything further needs the hand to move.
-function fingerFor(off, isLeft) {
+const fingerFor = (off, isLeft) => {
   if (off >= 0 && off <= 4) return { finger: isLeft ? 5 - off : off + 1, how: 'in' };
   if (off === -1) return { finger: isLeft ? 5 : 1, how: 'stretch-down' };
   if (off === 5)  return { finger: isLeft ? 1 : 5, how: 'stretch-up' };
   return { finger: null, how: 'shift' };
 }
 
-function fingerPlan(mel) {
+const fingerPlan = (mel) => {
   const alter = keyAlter(mel.key);
   const pitch = n => midiOf(n.d) + (n.alt !== undefined ? n.alt : (alter[letterOf(n.d)] || 0));
   const tonicLetter = mel.minor ? mel.key.rel : mel.key.tonic;
@@ -2005,7 +2005,7 @@ function fingerPlan(mel) {
   };
 }
 
-function handBoard(map, home) {
+const handBoard = (map, home) => {
   const marks = {};
   // every finger of the home position first, faded where the tune never lands
   (home || []).forEach(h => {
@@ -2023,7 +2023,7 @@ function handBoard(map, home) {
   return miniKeys(Math.min(...all) - 2, Math.max(...all) + 2, marks);
 }
 
-function fingeringDiagram(mel) {
+const fingeringDiagram = (mel) => {
   const p = fingerPlan(mel);
   const nm = d => nameWithAlt(letterOf(d), p.alter[letterOf(d)] || 0);
   const left = p.leftMelody;
@@ -2060,7 +2060,7 @@ let playState = 'off';          // off | counting | playing
 let playEl = null, playUrl = null, playTimer = null, playStart = 0;
 let playBpm = 84, playOnsets = [], playBeats = 0, playMode = 'both';
 
-function renderPlayAlong(mel, bpm, mode) {
+const renderPlayAlong = (mel, bpm, mode) => {
   const rate = WAV_RATE, spb = 60 / bpm;
   playBeats = melodyBars(mel).reduce((a, b) => a + b.reduce((x, n) => x + n.dur, 0), 0);
   const totalBeats = 4 + playBeats + 2;
@@ -2093,7 +2093,7 @@ function renderPlayAlong(mel, bpm, mode) {
   return out;
 }
 
-function startPlayAlong(mode) {
+const startPlayAlong = (mode) => {
   stopMetro();
   stopPlayAlong(true);
   playMode = mode;
@@ -2117,7 +2117,7 @@ function startPlayAlong(mode) {
   playTimer = setInterval(playTick, 60);
 }
 
-function playTick() {
+const playTick = () => {
   const spb = 60 / playBpm;
   const elapsed = (Date.now() - playStart) / 1000;
   if (playState === 'counting') {
@@ -2137,7 +2137,7 @@ function playTick() {
   if (bar) bar.style.width = Math.max(0, Math.min(100, elapsed / spb / playBeats * 100)) + '%';
 }
 
-function stopPlayAlong(quiet) {
+const stopPlayAlong = (quiet) => {
   if (playTimer) clearInterval(playTimer);
   playTimer = null;
   if (playEl) { playEl.pause(); playEl.currentTime = 0; }
@@ -2151,7 +2151,7 @@ const PLAY_MODES = [
   ['melody', 'Melody only',    'No click, just the tune.']
 ];
 
-function playAlongPanel() {
+const playAlongPanel = () => {
   if (playState === 'counting' || playState === 'playing') {
     const counting = playState === 'counting';
     return `<div style="height:5px;background:var(--rule);margin:10px 0">
@@ -2171,7 +2171,7 @@ function playAlongPanel() {
       PLAY_MODES.map(([, l, d]) => `<b>${l}</b> \u2014 ${d}`).join('<br>')}</p>`;
 }
 
-function wirePlayAlong(root) {
+const wirePlayAlong = (root) => {
   root.querySelectorAll('[data-play]').forEach(b => b.onclick = () => startPlayAlong(b.dataset.play));
   const s = root.querySelector('#playstop');
   if (s) s.onclick = () => stopPlayAlong();
@@ -2186,7 +2186,7 @@ let tapState = 'off';      // off | counting | running | done
 let tapTimes = [], tapExpected = [], tapStart = 0, tapTimer = null, tapResult = null;
 let tapEl = null, tapUrl = null, tapLast = null, tapBpm = 84, tapTotalBeats = 0;
 
-function rhythmOnsets(mel, bpm) {
+const rhythmOnsets = (mel, bpm) => {
   const spb = 60 / bpm;
   const out = [];
   let beat = 0;
@@ -2194,7 +2194,7 @@ function rhythmOnsets(mel, bpm) {
   return out;
 }
 
-function rhythmTrack(bpm, totalBeats) {
+const rhythmTrack = (bpm, totalBeats) => {
   const rate = WAV_RATE, spb = 60 / bpm;
   const beats = 4 + totalBeats + 2;                 // count-in, the piece, a tail
   const n = Math.round(beats * spb * rate);
@@ -2213,7 +2213,7 @@ function rhythmTrack(bpm, totalBeats) {
   return out;
 }
 
-function startRhythm() {
+const startRhythm = () => {
   stopMetro();                                   // one click track at a time
   tapBpm = metroBpm;
   tapExpected = rhythmOnsets(mel, tapBpm);
@@ -2237,7 +2237,7 @@ function startRhythm() {
   tapTimer = setInterval(rhythmTick, 60);
 }
 
-function rhythmTick() {
+const rhythmTick = () => {
   const spb = 60 / tapBpm;
   const elapsed = (Date.now() - tapStart) / 1000;
   if (tapState === 'counting') {
@@ -2264,7 +2264,7 @@ function rhythmTick() {
 }
 
 // the cursor follows the click, so a missed tap cannot desync it
-function paintBeat(elapsed) {
+const paintBeat = (elapsed) => {
   let passed = 0;
   while (passed < tapExpected.length && tapExpected[passed] <= elapsed + 0.06) passed++;
   const cur = Math.max(0, passed - 1);   // the note now sounding, not the next one
@@ -2278,7 +2278,7 @@ function paintBeat(elapsed) {
   }
 }
 
-function registerTap() {
+const registerTap = () => {
   if (tapState !== 'running') return;
   const t = (Date.now() - tapStart) / 1000;
   tapTimes.push(t);
@@ -2297,7 +2297,7 @@ function registerTap() {
   if (c) c.textContent = tapTimes.length + ' / ' + tapExpected.length;
 }
 
-function finishRhythm() {
+const finishRhythm = () => {
   if (tapTimer) clearInterval(tapTimer);
   tapTimer = null;
   if (tapEl) tapEl.pause();
@@ -2322,14 +2322,14 @@ function finishRhythm() {
   renderSight();
 }
 
-function stopRhythm() {
+const stopRhythm = () => {
   if (tapTimer) clearInterval(tapTimer);
   tapTimer = null;
   if (tapEl) tapEl.pause();
   tapState = 'off'; renderSight();
 }
 
-function rhythmPanel() {
+const rhythmPanel = () => {
   // counting and running share one layout so the pad is already in place, and
   // in the same spot, before the first note arrives
   if (tapState === 'counting' || tapState === 'running') {
@@ -2369,7 +2369,7 @@ function rhythmPanel() {
     <div class="row"><button class="btn" id="tapstart">Count me in at ${metroBpm}</button></div>`;
 }
 
-function wireRhythm(root) {
+const wireRhythm = (root) => {
   const s = root.querySelector('#tapstart');
   if (s) s.onclick = () => startRhythm();
   const pad = root.querySelector('#tappad');
@@ -2393,7 +2393,7 @@ const FEATURES = [
   ['ledger',    'a ledger-line note']
 ];
 
-function barFeatures(mel, barIdx) {
+const barFeatures = (mel, barIdx) => {
   const bars = melodyBars(mel);
   const bar = bars[barIdx] || [];
   const prevBar = bars[barIdx - 1] || [];
@@ -2426,7 +2426,7 @@ function barFeatures(mel, barIdx) {
 }
 
 // how common each feature is across the whole melody, as the yardstick
-function melodyBaseline(mel) {
+const melodyBaseline = (mel) => {
   const n = melodyBars(mel).length;
   const sum = {};
   FEATURES.forEach(([k]) => sum[k] = 0);
@@ -2439,7 +2439,7 @@ function melodyBaseline(mel) {
   return base;
 }
 
-function recordStumble(mel, barIdx) {
+const recordStumble = (mel, barIdx) => {
   S.stumbles = S.stumbles || [];
   S.stumbles.push({
     date: today(), step: stepIndex(), key: mel.key.name, minor: !!mel.minor,
@@ -2456,7 +2456,7 @@ function recordStumble(mel, barIdx) {
 // tried first flagged noise in roughly a third of runs.
 const INSIGHT_MIN_N = 8, INSIGHT_MIN_OBS = 5, INSIGHT_RATIO = 1.8;
 
-function stumbleInsight() {
+const stumbleInsight = () => {
   const list = S.stumbles || [];
   if (list.length < INSIGHT_MIN_N) return { enough: false, n: list.length };
   const rows = FEATURES.map(([k, label]) => {
@@ -2468,7 +2468,7 @@ function stumbleInsight() {
   return { enough: true, n: list.length, rows };
 }
 
-function insightPanel() {
+const insightPanel = () => {
   const ins = stumbleInsight();
   if (!ins.enough) {
     return `<details class="ref" style="margin-top:20px">
@@ -2562,7 +2562,7 @@ const curStep = () => STEPS[stepIndex()] || STEPS[0];
 // The ladder unlocks on its own progress, not on formal stage promotion. Gating
 // it on the stage meant clearing a step never opened the next one, because the
 // stage was itself waiting on tests done away from the app.
-function unlockedThrough() {
+const unlockedThrough = () => {
   let last = -1;
   STEPS.forEach((_, i) => { if (stepPassed(i)) last = i; });
   return Math.min(STEPS.length - 1, last + 1);
@@ -2572,7 +2572,7 @@ function unlockedThrough() {
 // keys, mode or rhythm, so it can no longer be inferred from those
 const stepIndex = () => Math.max(0, Math.min(STEPS.length - 1, S.sight.step || 0));
 
-function stepPicker() {
+const stepPicker = () => {
   const cur = stepIndex();
   const unlocked = unlockedThrough();
   const done = stepPassed(cur), streak = stepStreak(cur);
@@ -2617,11 +2617,11 @@ const defaultMode = () => curStep().mode;
 const effMode = () => S.sight.mode || defaultMode();
 const followingDefaults = () => !S.sight.mode && S.sight.key === 'random' && !S.sight.allKeys;
 
-function allowedKeys() {
+const allowedKeys = () => {
   return S.sight.allKeys ? KEYS_ALL : curStep().keys;
 }
 
-function newMelody() {
+const newMelody = () => {
   const m = effMode();
   const wantMinor = m === 'minor' || (m === 'mixed' && Math.random() < 0.5);
   let pool = allowedKeys();
@@ -2636,16 +2636,16 @@ function newMelody() {
     { hand: step.hand, reach, focus });
 }
 
-function trebleOnlyClefs() { return clefs().split('</g>')[0] + '</g>'; }
-function bassOnlyClefs() { return clefs().split('</g>')[1] + '</g>'; }
+const trebleOnlyClefs = () => { return clefs().split('</g>')[0] + '</g>'; }
+const bassOnlyClefs = () => { return clefs().split('</g>')[1] + '</g>'; }
 // a lone bass staff sits in the upper slot, so its clef moves up with it
-function clefsFor(mode) {
+const clefsFor = (mode) => {
   if (mode === 'grand' || mode === true) return clefs();
   if (mode === 'bass') return `<g transform="translate(0,-60)">${bassOnlyClefs()}</g>`;
   return trebleOnlyClefs();
 }
 
-function playMelody(bpm) {
+const playMelody = (bpm) => {
   if (melPlaying || S.muted) return;
   melPlaying = true;
   const spb = 60 / bpm;                       // seconds per beat
@@ -2659,7 +2659,7 @@ function playMelody(bpm) {
   }, total + 500);
 }
 
-function renderSight() {
+const renderSight = () => {
   if (!mel) newMelody();
   const v = document.getElementById('view');
   const alter = keyAlter(mel.key);
@@ -2874,12 +2874,12 @@ function renderSight() {
 // ---------- learn tab ----------
 // everything explanatory lives here. the in-context panels elsewhere are
 // conveniences; this is the place you go looking.
-function learnMinorKey() {
+const learnMinorKey = () => {
   const k = KEYS[namingIdx];
   return MINOR_OK.includes(k.name) ? k : keyByName('C');
 }
 
-function renderLearn() {
+const renderLearn = () => {
   const v = document.getElementById('view');
   const mk = learnMinorKey();
   const minorName = raisedSeventhFacts(mk).tonicName + ' minor';
@@ -2989,7 +2989,7 @@ function renderLearn() {
 }
 
 // ---------- progress ----------
-function renderProgress() {
+const renderProgress = () => {
   const cleared = STEPS.filter((_, i) => stepPassed(i)).length;
   const cur = stepIndex(), unlocked = unlockedThrough();
   document.getElementById('view').innerHTML = `
@@ -3022,7 +3022,7 @@ function renderProgress() {
 }
 
 // ---------- what to do next ----------
-function nextAction() {
+const nextAction = () => {
   const st = S.drill;
   const loggedToday = S.log.some(e => e.date === today());
 
@@ -3054,7 +3054,7 @@ function nextAction() {
     text: 'Logged for today \u2014 that is enough. If you want more, one more melody is the best use of a spare five minutes.' };
 }
 
-function renderNow() {
+const renderNow = () => {
   const a = nextAction();
   const here = tab === a.tab;
   const block = (withBtn) => `<div class="now">
@@ -3072,7 +3072,7 @@ function renderNow() {
     b.classList.toggle('rec', b.dataset.tab === a.tab && !here));
 }
 
-function readingTrend() {
+const readingTrend = () => {
   const all = S.drill.rounds;
   if (!all.length) return '';
   const rs = all.slice(-18);
@@ -3113,13 +3113,13 @@ function readingTrend() {
 
 // ---------- shell ----------
 let tab = 'practice';
-function switchTab(t) {
+const switchTab = (t) => {
   tab = t;
   document.querySelectorAll('nav button').forEach(b =>
     b.setAttribute('aria-selected', b.dataset.tab === t));
   render();
 }
-function render() {
+const render = () => {
   if (tab !== 'practice' && ticker) stopTicker();
   ({ practice: renderPractice, reading: renderReading, sight: renderSight,
      learn: renderLearn, progress: renderProgress })[tab]();
