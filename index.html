@@ -196,7 +196,7 @@ const blank = () => ({
   ignoreSilent: true,
   engine: 'auto',
   sight: { attempts: 0, key: 'random', mode: null, allKeys: false, step: 0,
-           streaks: {}, passed: {} },
+           streaks: {}, passed: {}, focus: null, focusChosen: false },
   session: null
 });
 
@@ -232,7 +232,7 @@ const normalize = (s) => {
   if (!Array.isArray(s.drill.rounds)) s.drill.rounds = [];
   if (!Array.isArray(s.log)) s.log = [];
   s.sight = { attempts: 0, key: 'random', mode: null, allKeys: false, step: 0,
-              streaks: {}, passed: {}, ...(s.sight || {}) };
+              streaks: {}, passed: {}, focus: null, focusChosen: false, ...(s.sight || {}) };
   if (!Array.isArray(s.stumbles)) s.stumbles = [];
   if (s.sight.mode === 'major') s.sight.mode = null;          // was the old default
   if (typeof s.sight.step !== 'number') s.sight.step = 0;     // pre-ladder saves
@@ -2611,6 +2611,29 @@ const stumbleInsight = () => {
   return { enough: true, n: list.length, rows };
 }
 
+// whether a detected weakness is something the generator can actually dial
+// up right now, given the current step's rhythm/reach
+const focusableFeature = k => {
+  const step = curStep();
+  const canEighths = (RHYTHMS[step.rhythm] || []).some(r => r.some(d => d === 0.5));
+  const atMaxReach = step.reach >= 2;
+  return k === 'leap' ? true :
+    k === 'turn' ? true :
+    k === 'eighths' ? canEighths :
+    k === 'outPos' ? !atMaxReach : false;
+};
+
+// the strongest focusable weakness, if any \u2014 this is what melodies weight
+// toward by default, unless the player has explicitly chosen otherwise
+const autoFocus = () => {
+  const ins = stumbleInsight();
+  if (!ins.enough) return null;
+  const top = ins.rows.find(r => r.ratio >= INSIGHT_RATIO && focusableFeature(r.k));
+  return top ? top.k : null;
+};
+
+const effFocus = () => S.sight.focusChosen ? (S.sight.focus || null) : autoFocus();
+
 const insightPanel = () => {
   const ins = stumbleInsight();
   if (!ins.enough) {
@@ -2622,15 +2645,7 @@ const insightPanel = () => {
     </details>`;
   }
   const strong = ins.rows.filter(r => r.ratio >= INSIGHT_RATIO);
-  const step = curStep();
-  const canEighths = (RHYTHMS[step.rhythm] || []).some(r => r.some(d => d === 0.5));
-  const atMaxReach = step.reach >= 2;
-  const focusable = k =>
-    k === 'leap' ? true :
-    k === 'turn' ? true :
-    k === 'eighths' ? canEighths :
-    k === 'outPos' ? !atMaxReach : false;
-  const cur = S.sight.focus || null;
+  const cur = effFocus();
 
   return `<details class="ref" open style="margin-top:20px">
     <summary>What you stumble on \u2014 ${ins.n} recorded</summary>
@@ -2641,15 +2656,17 @@ const insightPanel = () => {
              ${strong.slice(0, 3).map(r => `<li style="margin-bottom:6px"><b>${r.label}</b> \u2014 ${r.obs} of your ${ins.n} stumbles, against ${r.exp.toFixed(1)} expected. <span style="color:var(--red)">${r.ratio.toFixed(1)}\u00d7</span></li>`).join('')}
            </ul>`
         : `<p style="font-size:14px;max-width:58ch">No single feature stands out yet \u2014 your stumbles look spread across the ordinary difficulty of the material rather than concentrated on one thing. That is a decent sign; keep going and check again.</p>`}
-      ${strong.some(r => focusable(r.k)) ? `
+      ${strong.some(r => focusableFeature(r.k)) ? `
         <p class="eyebrow" style="margin-top:14px">Practise that on purpose</p>
         <div class="row">
-          ${strong.filter(r => focusable(r.k)).slice(0, 3).map(r =>
+          ${strong.filter(r => focusableFeature(r.k)).slice(0, 3).map(r =>
             `<button class="btn small ${cur === r.k ? 'primary' : ''}" data-focus="${r.k}">${r.label}</button>`).join('')}
           <button class="btn small ${!cur ? 'primary' : ''}" data-focus="none">Ordinary mix</button>
         </div>
-        <p style="font-size:13px;color:var(--soft);margin-top:6px;max-width:58ch">${cur
+        <p style="font-size:13px;color:var(--soft);margin-top:6px;max-width:58ch">${cur && S.sight.focusChosen
           ? 'Melodies are now weighted toward that. Everything else \u2014 key, hand, step \u2014 is unchanged, so it is the same exercise with the hard thing made frequent.'
+          : cur
+          ? 'Melodies are automatically weighted toward your strongest weakness. Choose one yourself, or Ordinary mix, to override this.'
           : 'Weighting melodies toward a weakness is the fastest way to fix it, and the least pleasant. Short bursts.'}</p>` : ''}
       ${strong.length && !strong.some(r => focusable(r.k)) ? `<p style="font-size:13px;color:var(--soft);margin-top:10px;max-width:58ch">There is no weighting to offer for that at your current step \u2014 ${
         strong[0].k === 'eighths' ? 'eighth notes only appear from step 9 onward' :
@@ -2778,7 +2795,7 @@ const newMelody = () => {
   let name = S.sight.key;
   if (name === 'random' || !pool.includes(name)) name = drawKey(pool);
   const step = curStep();
-  const focus = S.sight.focus || null;
+  const focus = effFocus();
   const reach = focus === 'outPos' ? Math.min(2, step.reach + 1) : step.reach;
   mel = genMelody(step.rhythm, (Math.random() * 1e9) | 0, keyByName(name), wantMinor,
     { hand: step.hand, reach, focus });
@@ -2961,10 +2978,13 @@ const renderSight = () => {
   });
   v.querySelectorAll('[data-focus]').forEach(b => b.onclick = () => {
     S.sight.focus = b.dataset.focus === 'none' ? null : b.dataset.focus;
+    S.sight.focusChosen = true;
     save(); newMelody(); renderSight();
   });
   const cs = document.getElementById('clearstumbles');
-  if (cs) cs.onclick = () => { S.stumbles = []; S.sight.focus = null; save(); renderSight(); };
+  if (cs) cs.onclick = () => {
+    S.stumbles = []; S.sight.focus = null; S.sight.focusChosen = false; save(); renderSight();
+  };
   v.querySelectorAll('[data-step]').forEach(b => b.onclick = () => {
     S.sight.step = +b.dataset.step;
     save(); newMelody(); renderSight();

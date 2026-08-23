@@ -74,7 +74,8 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'newMelody',
     'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
     'startSession', 'toggleSlot', 'solfegeSyllable', 'MINOR_OK', 'solfegeStaffSVG',
-    'solfegeHTML', 'melKeyLabel', 'drillStaffSVG', 'keySigStaffSVG', 'renderVerdictOnly'
+    'solfegeHTML', 'melKeyLabel', 'drillStaffSVG', 'keySigStaffSVG', 'renderVerdictOnly',
+    'effFocus'
   ];
   const fn = new Function(...names, `${body}
     return { ${exposed.join(', ')},

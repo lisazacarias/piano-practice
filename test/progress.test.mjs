@@ -97,6 +97,62 @@ test('stumble analysis finds a real pattern', () => {
   assert.ok(top.ratio > 1.5, `leap ratio only ${top.ratio.toFixed(2)}`);
 });
 
+test('a detected weakness becomes the default focus, without being asked', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.sight.step = 6;
+  assert.equal(app.effFocus(), null, 'should not invent a focus with no stumble history');
+  for (let k = 0; k < 16; k++) {
+    const m = app.genMelody(1, 300 + k, app.keyByName('C'), false, { hand: 'both', reach: 0 });
+    app.mel = m;
+    let worst = 0, best = -1;
+    app.melodyBars(m).forEach((_, i) => {
+      const f = app.barFeatures(m, i);
+      if (f.leap > best) { best = f.leap; worst = i; }
+    });
+    app.recordStumble(m, worst);
+  }
+  assert.equal(app.effFocus(), 'leap', 'a strong, focusable weakness should become the default automatically');
+});
+
+test('an explicit "ordinary mix" choice overrides the automatic weakness focus', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.sight.step = 6;
+  for (let k = 0; k < 16; k++) {
+    const m = app.genMelody(1, 300 + k, app.keyByName('C'), false, { hand: 'both', reach: 0 });
+    app.mel = m;
+    let worst = 0, best = -1;
+    app.melodyBars(m).forEach((_, i) => {
+      const f = app.barFeatures(m, i);
+      if (f.leap > best) { best = f.leap; worst = i; }
+    });
+    app.recordStumble(m, worst);
+  }
+  app.S.sight.focus = null;
+  app.S.sight.focusChosen = true;
+  assert.equal(app.effFocus(), null, 'an explicit opt-out should stick even though a weakness is detected');
+});
+
+test('an explicit focus choice is respected even if it differs from the detected weakness', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.sight.step = 6;
+  for (let k = 0; k < 16; k++) {
+    const m = app.genMelody(1, 300 + k, app.keyByName('C'), false, { hand: 'both', reach: 0 });
+    app.mel = m;
+    let worst = 0, best = -1;
+    app.melodyBars(m).forEach((_, i) => {
+      const f = app.barFeatures(m, i);
+      if (f.leap > best) { best = f.leap; worst = i; }
+    });
+    app.recordStumble(m, worst);
+  }
+  app.S.sight.focus = 'turn';
+  app.S.sight.focusChosen = true;
+  assert.equal(app.effFocus(), 'turn', 'an explicit choice should win over the auto-detected weakness');
+});
+
 test('stumble analysis rarely finds a pattern in noise', () => {
   // Measured, not asserted once: a purely random stumbler should be flagged in
   // well under a fifth of runs. A single passing trial proves nothing here.
