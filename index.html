@@ -2738,7 +2738,7 @@ const renderSight = () => {
     <div id="melscore" style="${checkRunning
         ? 'position:sticky;top:0;z-index:5;background:var(--page);box-shadow:0 6px 10px -8px rgba(0,0,0,.35);'
         : ''}border:1px solid var(--rule);padding:10px 4px;margin:14px 0;overflow-x:auto">
-      ${melodySVG(mel, clefsFor, null)}
+      ${melodySVG(mel, clefsFor, null, askBar)}
     </div>
 
     <p class="eyebrow" style="margin-top:20px">Check the rhythm</p>
@@ -2758,10 +2758,9 @@ const renderSight = () => {
       <div class="stat"><b>${S.sight.attempts || 0}</b><span>attempted</span></div>
     </div>
     ${askBar ? `<div class="now" style="border-left-color:var(--red);margin-top:12px">
-      <p class="eyebrow" style="color:var(--red)">Which bar went wrong?</p>
+      <p class="eyebrow" style="color:var(--red)">Tap the bar that went wrong, above</p>
       <p style="margin:0 0 8px;font-size:14px">One tap and it moves on. Over a few of these the app can tell you what the bars you trip on have in common.</p>
       <div class="row">
-        ${melodyBars(mel).map((_, i) => `<button class="btn small" data-bar="${i}">${i + 1}</button>`).join('')}
         <button class="btn small" data-bar="skip">Not sure</button>
       </div>
     </div>` : ''}
