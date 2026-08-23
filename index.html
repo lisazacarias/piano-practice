@@ -148,6 +148,15 @@
     .notehead { animation: drop .4s ease-out; }
     @keyframes drop { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
   }
+  .stumble-hit {
+    fill: transparent;
+    stroke: var(--red);
+    stroke-width: 1;
+    stroke-dasharray: 3 3;
+    cursor: pointer;
+    transition: fill 80ms ease;
+  }
+  .stumble-hit.flash { fill: var(--red); fill-opacity: .55; }
 </style>
 
 <div class="shell">
