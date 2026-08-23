@@ -42,6 +42,11 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
   letter-distance from the tonic regardless of the key's own sharps and flats,
   minor correctly uses the altered 3rd/6th/7th (me, le, te), and the drill mode
   renders cleanly across every key.
+- **Drill staff** — the reading drill redraws the correct staff (signature,
+  note, or both) for whichever mode is active after every answer, not just on
+  the first render; and the Sight tab's fingering diagram stays hidden, along
+  with the key name everywhere it would otherwise appear, until the key
+  signature is identified correctly.
 
 ## Where your data lives
 
