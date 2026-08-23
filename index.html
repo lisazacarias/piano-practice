@@ -1041,13 +1041,13 @@ const renderReading = () => {
     <p class="eyebrow">Note drill \u00b7 ${Math.min(ROUND_LEN, drill.round.n + 1)} of ${ROUND_LEN}</p>
     <h2>${drill.mode === 'find' ? 'Play the note'
       : drill.mode === 'key' ? 'Which major key?'
-      : drill.mode === 'solfege' ? `Name the syllable — ${drill.minor ? KEYS[drill.keyIdx].relName + ' minor' : KEYS[drill.keyIdx].name + ' major'}`
+      : drill.mode === 'solfege' ? `Name the syllable \u2014 ${drill.minor ? KEYS[drill.keyIdx].relName + ' minor' : KEYS[drill.keyIdx].name + ' major'}`
       : 'Name the note'}</h2>
     <div class="row" style="margin-bottom:8px">
       <button class="btn small ${drill.mode === 'find' ? 'primary' : ''}" data-mode="find">Find the key</button>
       <button class="btn small ${drill.mode === 'name' ? 'primary' : ''}" data-mode="name">Name the letter</button>
       <button class="btn small ${drill.mode === 'key' ? 'primary' : ''}" data-mode="key">Name the key</button>
-      <button class="btn small ${drill.mode === 'solfege' ? 'primary' : ''}" data-mode="solfege">Name the solfège</button>
+      <button class="btn small ${drill.mode === 'solfege' ? 'primary' : ''}" data-mode="solfege">Name the solf\u00e8ge</button>
       <button class="btn small ${showLM ? 'primary' : ''}" id="lm">Landmarks</button>
       <button class="btn small" id="mute" style="margin-left:auto">${S.muted ? 'Sound off' : 'Sound on'}</button>
     </div>
