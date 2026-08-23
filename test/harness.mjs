@@ -68,7 +68,7 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     'stepIndex', 'stepPassed', 'stepStreak', 'unlockedThrough', 'curStep',
     'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'newMelody',
     'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
-    'startSession', 'toggleSlot', 'solfegeSyllable', 'MINOR_OK'
+    'startSession', 'toggleSlot', 'solfegeSyllable', 'MINOR_OK', 'solfegeStaffSVG'
   ];
   const fn = new Function(...names, `${body}
     return { ${exposed.join(', ')},

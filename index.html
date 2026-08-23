@@ -593,6 +593,36 @@ const staffSVG = (d, state) => {
             ${lines}${braces}${clefMarks}${note}</svg>`;
 }
 
+// staffSVG shows a note with no key signature; keySigStaffSVG shows a
+// signature with no note. Solfège needs both at once, so this combines them
+// rather than complicating either — the note shifts right by keySigWidth to
+// clear the signature glyphs.
+const solfegeStaffSVG = (d, key, state) => {
+  const w = keySigWidth(key);
+  const right = 440 + w;
+  const noteX = 250 + w;
+  const y = yOf(d);
+  const colour = state === 'ok' ? 'var(--blue)' : state === 'no' ? 'var(--red)' : 'var(--ink)';
+  let lines = '';
+  for (let i = 0; i < 5; i++) {
+    lines += `<line x1="12" y1="${30 + i * 10}" x2="${right}" y2="${30 + i * 10}" stroke="var(--rule)" stroke-width="1"/>`;
+    lines += `<line x1="12" y1="${90 + i * 10}" x2="${right}" y2="${90 + i * 10}" stroke="var(--rule)" stroke-width="1"/>`;
+  }
+  const braces = `<line x1="12" y1="30" x2="12" y2="130" stroke="var(--ink)" stroke-width="2"/>
+                  <line x1="${right}" y1="30" x2="${right}" y2="130" stroke="var(--rule)" stroke-width="1"/>`;
+  const sig = `${keySigSVG(key, 'treble', 48)}${keySigSVG(key, 'bass', 48)}`;
+  let note = '';
+  if (d === MIDDLE_C) note += `<line x1="${noteX - 15}" y1="80" x2="${noteX + 15}" y2="80" stroke="var(--ink)" stroke-width="1"/>`;
+  const stemUp = d < (d >= MIDDLE_C ? 34 : 22);
+  const sx = stemUp ? noteX + 7 : noteX - 7;
+  const sy2 = stemUp ? y - 32 : y + 32;
+  note += `<line x1="${sx}" y1="${y}" x2="${sx}" y2="${sy2}" stroke="${colour}" stroke-width="1.6"/>`;
+  note += `<ellipse class="notehead" cx="${noteX}" cy="${y}" rx="7.5" ry="5.4" fill="${colour}" transform="rotate(-18 ${noteX} ${y})"/>`;
+  return `<svg viewBox="0 0 ${right} 165" xmlns="http://www.w3.org/2000/svg" role="img"
+            aria-label="A note on the grand staff with a key signature">
+            ${lines}${braces}${clefs()}${sig}${note}</svg>`;
+}
+
 // ---------- progress spine ----------
 // One note per step of the ladder, ascending. Filled where cleared.
 const renderSpine = () => {

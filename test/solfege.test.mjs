@@ -39,6 +39,20 @@ test('do-based minor uses plain syllables for the 2nd, 4th, and 5th', () => {
   assert.equal(app.solfegeSyllable(app.dOf('E', 4), c, true), 'sol', '5th degree');
 });
 
+test('solfegeStaffSVG draws a note and grows to fit the key signature', () => {
+  const c = app.keyByName('C'); // no sharps or flats
+  const eb = app.keyByName('E♭'); // three flats
+  const cSvg = app.solfegeStaffSVG(app.dOf('C', 4), c, null);
+  const ebSvg = app.solfegeStaffSVG(app.dOf('C', 4), eb, null);
+  assert.ok(cSvg.startsWith('<svg'), 'should return an svg element');
+  assert.ok(!/NaN|undefined/.test(cSvg), 'C major staff contains NaN or undefined');
+  assert.ok(!/NaN|undefined/.test(ebSvg), 'E♭ major staff contains NaN or undefined');
+  assert.ok(cSvg.includes('class="notehead"'), 'should draw a notehead');
+  // a signature with flats needs more width than no signature at all
+  const widthOf = svg => +svg.match(/viewBox="0 0 (\d+(?:\.\d+)?)/)[1];
+  assert.ok(widthOf(ebSvg) > widthOf(cSvg), 'a 3-flat signature should widen the staff');
+});
+
 test('every key names all seven scale degrees without NaN or undefined', () => {
   app.KEYS.forEach(k => {
     for (let i = 0; i < 7; i++) {
