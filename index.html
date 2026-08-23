@@ -1714,13 +1714,14 @@ const melodySVG = (mel, clefFn, mark, askBar) => {
       }
       if (askBar) {
         g += `<rect class="stumble-hit" data-bar="${idx}" x="${bx0}" y="0"
-              width="${BARW}" height="${sysH}"/>`;
+              width="${BARW}" height="${sysH}" role="button" tabindex="0"
+              aria-label="Mark bar ${idx + 1} as where it went wrong"/>`;
       }
     }
     out += `<g transform="translate(0,${sys * sysH})">${g}</g>`;
   }
   return `<svg viewBox="0 0 ${right + 8} ${sysH + botExtent}" xmlns="http://www.w3.org/2000/svg"
-    role="img" aria-label="Generated eight-bar sight-reading exercise in ${melKeyLabel(mel)}">${out}</svg>`;
+    role="img" aria-label="Generated eight-bar sight-reading exercise in ${melKeyLabel(mel)}${askBar ? '. Tap a bar to mark where you stumbled.' : ''}">${out}</svg>`;
 }
 
 const noteGlyph = (x, y, dur, colour, withStem, mid) => {
