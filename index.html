@@ -828,52 +828,6 @@ function endSession() {
 }
 
 const fmt = sec => `${Math.floor(sec / 60)}:${String(Math.max(0, sec % 60)).padStart(2, '0')}`;
-
-function startSession(mins) {
-  S.session = {
-    mins,
-    slots: PLANS[mins].map(([id, m]) => ({ id, total: m * 60, left: m * 60, running: false, done: false }))
-  };
-  save(); render();
-}
-function toggleSlot(i) {
-  const s = S.session;
-  const wasRunning = s.slots[i].running;
-  s.slots.forEach(x => x.running = false);
-  s.slots[i].running = !wasRunning;
-  s.slots[i].running ? startTicker() : stopTicker();
-  save(); renderPractice();
-}
-function finishSlot(i) {
-  S.session.slots[i].done = true;
-  S.session.slots[i].running = false;
-  if (!S.session.slots.some(x => x.running)) stopTicker();
-  save(); renderPractice();
-}
-function startTicker() {
-  stopTicker();
-  ticker = setInterval(() => {
-    const s = S.session; if (!s) return stopTicker();
-    const i = s.slots.findIndex(x => x.running);
-    if (i < 0) return stopTicker();
-    s.slots[i].left--;
-    const el = document.getElementById('clk' + i);
-    if (el) el.textContent = fmt(s.slots[i].left);
-    if (s.slots[i].left <= 0) { finishSlot(i); save(); }
-  }, 1000);
-}
-function stopTicker() { clearInterval(ticker); ticker = null; }
-
-function endSession() {
-  const s = S.session;
-  const spent = s.slots.reduce((a, x) => a + (x.done ? x.total : x.total - x.left), 0);
-  const mins = Math.max(1, Math.round(spent / 60));
-  S.log.unshift({ date: today(), mins, slots: s.slots.filter(x => x.done).map(x => SLOTS[x.id].name) });
-  S.log = S.log.slice(0, 400);
-  S.session = null;
-  stopTicker(); save();
-  switchTab('progress');
-}
 const today = () => new Date().toISOString().slice(0, 10);
 
 // ---------- reading drill ----------

@@ -67,7 +67,8 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     'encodeWav', 'barFeatures', 'melodyBaseline', 'recordStumble', 'stumbleInsight',
     'stepIndex', 'stepPassed', 'stepStreak', 'unlockedThrough', 'curStep',
     'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'newMelody',
-    'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey'
+    'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
+    'startSession', 'toggleSlot'
   ];
   const fn = new Function(...names, `${body}
     return { ${exposed.join(', ')},
