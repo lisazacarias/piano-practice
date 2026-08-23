@@ -1538,7 +1538,20 @@ const genMelody = (stage, seed, key, minor, opts) => {
   if (hand === 'left') { melTonic = dOf(tonicLetter, 3); while (melTonic > 23) melTonic -= 7; }
   else melTonic = dOf(tonicLetter, 4);
 
-  const [down, up] = REACH[reach] || REACH[0];
+  // one melody stretches one way, not both — mixing a thumb-stretch-down with
+  // a pinky-stretch-up in the same eight bars teaches two things at once.
+  // Pick from whichever directions are actually usable first: melTonic can
+  // sit right at the instrument's floor or ceiling (e.g. a right-hand C-major
+  // tune starts on MIDDLE_C itself), which blocks one direction outright.
+  const [reachDown, reachUp] = REACH[reach] || REACH[0];
+  const absLo = hand === 'left' ? dOf('E', 2) : MIDDLE_C;
+  const absHi = hand === 'left' ? dOf('C', 4) - 1 : dOf('A', 5);
+  const canReachDown = reachDown > 0 && Math.max(absLo, melTonic - reachDown) < melTonic;
+  const canReachUp = reachUp > 0 && Math.min(melTonic + 4 + reachUp, absHi) > melTonic + 4;
+  const reachDir = canReachDown && canReachUp ? (rnd() < 0.5 ? 'down' : 'up')
+                 : canReachDown ? 'down' : canReachUp ? 'up' : null;
+  const down = reachDir === 'down' ? reachDown : 0;
+  const up = reachDir === 'up' ? reachUp : 0;
   const lo = hand === 'left' ? Math.max(dOf('E', 2), melTonic - down)
                              : Math.max(MIDDLE_C, melTonic - down);
   const hi = hand === 'left' ? Math.min(melTonic + 4 + up, dOf('C', 4) - 1)

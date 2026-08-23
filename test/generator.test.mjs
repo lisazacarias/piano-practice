@@ -105,6 +105,21 @@ test('a reaching step actually reaches, not just permits it', () => {
   });
 });
 
+test('a reaching melody stretches only one direction, never both', () => {
+  app.STEPS.forEach((step, i) => {
+    if (step.reach === 0) return;
+    for (const kn of step.keys) for (let seed = 1; seed <= 40; seed++) {
+      const m = app.genMelody(step.rhythm, seed, app.keyByName(kn), false,
+        { hand: step.hand, reach: step.reach });
+      const offsets = app.melodyBars(m).flat().map(n => n.d - m.melTonic);
+      const reachesLow = offsets.some(o => o < 0);
+      const reachesHigh = offsets.some(o => o > 4);
+      assert.ok(!(reachesLow && reachesHigh),
+        `step ${i + 1} seed ${seed} (${kn}) stretched both below and above the position in one melody`);
+    }
+  });
+});
+
 test('a raised seventh sits one semitone below the minor tonic', () => {
   ['C', 'G', 'D', 'F', 'B\u266d', 'E\u266d'].forEach(kn => {
     const k = app.keyByName(kn);
