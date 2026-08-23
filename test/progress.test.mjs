@@ -45,6 +45,10 @@ test('every tab renders in every state', () => {
           app.playState = 'off'; app.playOnsets = app.tapExpected;
           app.playBeats = 32; app.playBpm = 84;
           app.lastVerdict = null; app.prevMel = null; app.askBar = false;
+          app.render();
+          const askHtml = (() => { app.askBar = true; app.render(); return app.store.view.innerHTML || ''; })();
+          assert.ok(!/NaN|undefined/.test(askHtml), `${t} with askBar contains NaN or undefined`);
+          app.askBar = false;
         }
         app.render();
         const html = app.store.view.innerHTML || '';
