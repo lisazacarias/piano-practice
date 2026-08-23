@@ -38,6 +38,10 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
 - **Progress** — steps unlock in order, the directive always names a real tab,
   every tab renders in every state, keys never repeat back to back, and the
   stumble analysis finds real patterns while rarely flagging noise.
+- **Solfège** — the movable-do, do-based-minor syllable for a note is its
+  letter-distance from the tonic regardless of the key's own sharps and flats,
+  minor correctly uses the altered 3rd/6th/7th (me, le, te), and the drill mode
+  renders cleanly across every key.
 
 ## Where your data lives
 
