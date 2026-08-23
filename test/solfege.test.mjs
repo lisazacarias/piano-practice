@@ -53,6 +53,16 @@ test('solfegeStaffSVG draws a note and grows to fit the key signature', () => {
   assert.ok(widthOf(ebSvg) > widthOf(cSvg), 'a 3-flat signature should widen the staff');
 });
 
+test('solfegeHTML renders one button per syllable, for the right mode', () => {
+  const majorHtml = app.solfegeHTML(false);
+  const minorHtml = app.solfegeHTML(true);
+  ['do', 're', 'mi', 'fa', 'sol', 'la', 'ti'].forEach(s =>
+    assert.ok(majorHtml.includes(`data-answer="${s}"`), `major buttons missing ${s}`));
+  ['do', 're', 'me', 'fa', 'sol', 'le', 'te'].forEach(s =>
+    assert.ok(minorHtml.includes(`data-answer="${s}"`), `minor buttons missing ${s}`));
+  assert.ok(!majorHtml.includes('data-answer="me"'), 'major buttons should not offer the minor 3rd');
+});
+
 test('every key names all seven scale degrees without NaN or undefined', () => {
   app.KEYS.forEach(k => {
     for (let i = 0; i < 7; i++) {

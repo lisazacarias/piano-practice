@@ -1107,6 +1107,12 @@ const lettersHTML = () => {
     `<button class="btn" data-answer="${l}">${l}</button>`).join('')}</div>`;
 }
 
+const solfegeHTML = (minor) => {
+  const syllables = minor ? SOLFEGE_MINOR : SOLFEGE_MAJOR;
+  return `<div class="letters">${syllables.map(s =>
+    `<button class="btn" style="width:auto;padding:0 14px" data-answer="${s}">${s}</button>`).join('')}</div>`;
+}
+
 const keyboardHTML = () => {
   const whites = [];
   for (let d = dOf('C', 3); d <= dOf('C', 5); d++) whites.push(d);
