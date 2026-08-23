@@ -2654,6 +2654,9 @@ const stepPicker = () => {
 let mel = null, melPlaying = false;
 // the melody just judged, so it can be brought back to work on
 let prevMel = null, lastVerdict = null, askBar = false;
+// pending "lock and flash" timeout from tapping a bar in activateBar(); cancelled
+// on the next renderSight() or on leaving the sight tab so it can't fire stale
+let stumbleTimer = null;
 const CLEAN_TARGET = 2;   // three in a row was a wall, not a checkpoint
 
 // The ladder step governs the HANDS. Keys and minor are reading difficulty, not
@@ -2706,6 +2709,7 @@ const playMelody = (bpm) => {
 }
 
 const renderSight = () => {
+  if (stumbleTimer) { clearTimeout(stumbleTimer); stumbleTimer = null; }
   if (!mel) newMelody();
   const v = document.getElementById('view');
   const alter = keyAlter(mel.key);
@@ -2911,9 +2915,13 @@ const renderSight = () => {
   const activateBar = b => {
     if (barLocked) return;
     barLocked = true;
-    v.querySelectorAll('[data-bar]').forEach(other => { other.disabled = true; });
-    b.classList.add('flash');
-    setTimeout(() => finishStumble(b.dataset.bar), 250);
+    v.querySelectorAll('[data-bar]').forEach(other => {
+      other.disabled = true;
+      other.setAttribute('aria-disabled', 'true');
+      other.style.pointerEvents = 'none';
+    });
+    if (b.classList.contains('stumble-hit')) b.classList.add('flash');
+    stumbleTimer = setTimeout(() => { stumbleTimer = null; finishStumble(b.dataset.bar); }, 250);
   };
   v.querySelectorAll('[data-bar]').forEach(b => {
     b.onclick = () => activateBar(b);
@@ -3179,6 +3187,7 @@ const switchTab = (t) => {
 }
 const render = () => {
   if (tab !== 'practice' && ticker) stopTicker();
+  if (tab !== 'sight' && stumbleTimer) { clearTimeout(stumbleTimer); stumbleTimer = null; }
   ({ practice: renderPractice, reading: renderReading, sight: renderSight,
      learn: renderLearn, progress: renderProgress })[tab]();
   renderNow();
