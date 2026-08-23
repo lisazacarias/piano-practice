@@ -1,0 +1,126 @@
+import { test } from 'node:test';
+import assert from 'node:assert';
+import { loadApp } from './harness.mjs';
+
+test('clearing a step unlocks exactly the next one', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  for (let cleared = 0; cleared <= app.STEPS.length; cleared++) {
+    app.S.sight.passed = {};
+    for (let i = 0; i < cleared; i++) app.S.sight.passed[i] = true;
+    const expected = Math.min(app.STEPS.length - 1, cleared);
+    assert.equal(app.unlockedThrough(), expected, `${cleared} cleared`);
+  }
+});
+
+test('the directive always names a real tab and says something', () => {
+  const app = loadApp();
+  const TABS = ['sight', 'practice', 'reading', 'learn', 'progress'];
+  for (let step = 0; step < app.STEPS.length; step++)
+    for (const cleared of [0, step, app.STEPS.length]) {
+      app.S = app.normalize(app.blank());
+      app.S.primerSeen = true; app.S.drill.asked = 40;
+      app.S.sight.step = step;
+      for (let i = 0; i < cleared; i++) app.S.sight.passed[i] = true;
+      const a = app.nextAction();
+      assert.ok(TABS.includes(a.tab), `bad tab ${a.tab}`);
+      assert.ok(a.text && a.text.length > 20, 'directive too short');
+    }
+});
+
+test('every tab renders in every state', () => {
+  const app = loadApp();
+  const TABS = ['sight', 'practice', 'reading', 'learn', 'progress'];
+  for (let step = 0; step < app.STEPS.length; step += 2)
+    for (const cleared of [0, step, app.STEPS.length]) {
+      for (const t of TABS) {
+        app.S = app.normalize(app.blank());
+        app.S.primerSeen = true; app.S.muted = true; app.S.sight.step = step;
+        for (let i = 0; i < cleared; i++) app.S.sight.passed[i] = true;
+        app.tab = t;
+        if (t === 'sight') {
+          app.newMelody();
+          app.tapExpected = app.rhythmOnsets(app.mel, 84);
+          app.tapTotalBeats = 32; app.tapState = 'off'; app.tapResult = null;
+          app.playState = 'off'; app.playOnsets = app.tapExpected;
+          app.playBeats = 32; app.playBpm = 84;
+          app.lastVerdict = null; app.prevMel = null; app.askBar = false;
+        }
+        app.render();
+        const html = app.store.view.innerHTML || '';
+        assert.ok(html.length > 0, `${t} rendered empty`);
+        assert.ok(!/NaN|undefined/.test(html), `${t} contains NaN or undefined`);
+      }
+    }
+});
+
+test('key selection never repeats back to back', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  for (const pool of [['C', 'G', 'F'], app.KEYS_ALL]) {
+    let prev = null;
+    for (let i = 0; i < 500; i++) {
+      const k = app.drawKey(pool);
+      assert.notEqual(k, prev, 'same key twice running');
+      prev = k;
+    }
+  }
+});
+
+test('stumble analysis finds a real pattern', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.sight.step = 6;
+  // a learner who always trips on the bar containing the biggest leap
+  for (let k = 0; k < 16; k++) {
+    const m = app.genMelody(1, 300 + k, app.keyByName('C'), false, { hand: 'both', reach: 1 });
+    app.mel = m;
+    let worst = 0, best = -1;
+    app.melodyBars(m).forEach((_, i) => {
+      const f = app.barFeatures(m, i);
+      if (f.leap > best) { best = f.leap; worst = i; }
+    });
+    app.recordStumble(m, worst);
+  }
+  const top = app.stumbleInsight().rows[0];
+  assert.equal(top.k, 'leap', `expected leaps on top, got ${top.k}`);
+  assert.ok(top.ratio > 1.5, `leap ratio only ${top.ratio.toFixed(2)}`);
+});
+
+test('stumble analysis rarely finds a pattern in noise', () => {
+  // Measured, not asserted once: a purely random stumbler should be flagged in
+  // well under a fifth of runs. A single passing trial proves nothing here.
+  const app = loadApp();
+  let flagged = 0;
+  const RUNS = 60;
+  for (let t = 0; t < RUNS; t++) {
+    app.S = app.normalize(app.blank());
+    app.S.sight.step = 6;
+    let s = t + 1;
+    const rnd = () => { s |= 0; s = s + 0x6D2B79F5 | 0;
+      let x = Math.imul(s ^ s >>> 15, 1 | s);
+      x = x + Math.imul(x ^ x >>> 7, 61 | x) ^ x;
+      return ((x ^ x >>> 14) >>> 0) / 4294967296; };
+    for (let k = 0; k < 20; k++) {
+      const m = app.genMelody(1, t * 997 + k, app.keyByName('C'), false, { hand: 'both', reach: 1 });
+      app.mel = m;
+      app.recordStumble(m, Math.floor(rnd() * app.melodyBars(m).length));
+    }
+    const ins = app.stumbleInsight();
+    if (ins.enough && ins.rows.some(r => r.ratio >= 1.8)) flagged++;
+  }
+  const rate = flagged / RUNS;
+  assert.ok(rate < 0.20, `flagged noise in ${(rate * 100).toFixed(0)}% of runs`);
+});
+
+test('it says nothing at all until there is enough data', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.sight.step = 6;
+  for (let k = 0; k < 5; k++) {
+    const m = app.genMelody(1, 900 + k, app.keyByName('C'), false, { hand: 'both', reach: 1 });
+    app.mel = m;
+    app.recordStumble(m, 0);
+  }
+  assert.equal(app.stumbleInsight().enough, false, 'drew a conclusion from five marks');
+});
