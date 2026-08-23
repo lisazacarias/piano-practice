@@ -27,9 +27,11 @@ The tests load the real script out of `index.html` and run it against a stub
 browser, so they exercise the shipped code rather than a copy of it. They cover:
 
 - **Generator** — every bar totals four beats, melodies close on the tonic, the
-  motif is restated, a five-finger step never leaves the position, one hand
-  means one staff, eighth notes only appear where the step allows, and the
-  raised seventh lands one semitone below each minor tonic.
+  motif is restated, a five-finger step never leaves the position, a reaching-out
+  step actually requires the reach rather than merely allowing it, one hand
+  means one staff, eighth notes only appear where the step allows, the raised
+  seventh lands one semitone below each minor tonic, and the score exposes one
+  tappable bar per measure when marking a stumble.
 - **Audio** — every step produces audible non-clipping playback, both staves
   reach the output, written duration is audible in the sound, and the click
   track holds its beat to under 2ms across tempos.
