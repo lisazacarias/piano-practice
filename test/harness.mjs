@@ -38,7 +38,12 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     document: {
       getElementById: id => (store[id] = store[id] || el()),
       createElement: () => el(), body: el(),
-      querySelectorAll: () => [], querySelector: () => null, addEventListener() {}
+      querySelectorAll: () => [],
+      // selector-keyed, same backing store as getElementById — good enough to
+      // catch code that writes to a querySelector'd element directly instead
+      // of going through the store, like renderVerdictOnly's staff redraw
+      querySelector: sel => (store[sel] = store[sel] || el()),
+      addEventListener() {}
     },
     window: {
       AudioContext: Ctx, self: 1, top: 1,
@@ -69,7 +74,7 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'newMelody',
     'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
     'startSession', 'toggleSlot', 'solfegeSyllable', 'MINOR_OK', 'solfegeStaffSVG',
-    'solfegeHTML'
+    'solfegeHTML', 'melKeyLabel', 'drillStaffSVG', 'keySigStaffSVG', 'renderVerdictOnly'
   ];
   const fn = new Function(...names, `${body}
     return { ${exposed.join(', ')},
@@ -88,6 +93,7 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
       get lastVerdict(){ return lastVerdict; }, set lastVerdict(v){ lastVerdict = v; },
       get prevMel(){ return prevMel; }, set prevMel(v){ prevMel = v; },
       get askBar(){ return askBar; }, set askBar(v){ askBar = v; },
+      get keyIdentified(){ return keyIdentified; }, set keyIdentified(v){ keyIdentified = v; },
       get metroBpm(){ return metroBpm; }, set metroBpm(v){ metroBpm = v; }
     };`);
   const app = fn(...names.map(n => sandbox[n]));

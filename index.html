@@ -1052,11 +1052,7 @@ const renderReading = () => {
       <button class="btn small" id="mute" style="margin-left:auto">${S.muted ? 'Sound off' : 'Sound on'}</button>
     </div>
     ${showLM ? `<div style="border:1px solid var(--rule);padding:8px 4px;margin-bottom:12px">${landmarkSVG()}</div>` : ''}
-    <div class="staffwrap">${drill.mode === 'key'
-      ? keySigStaffSVG(KEYS[drill.keyIdx], drill.state)
-      : drill.mode === 'solfege'
-      ? solfegeStaffSVG(drill.d, KEYS[drill.keyIdx], drill.state)
-      : staffSVG(drill.d, drill.state)}</div>
+    <div class="staffwrap">${drillStaffSVG()}</div>
     <p class="verdict ${drill.state === 'ok' ? 'ok' : drill.state === 'no' ? 'no' : ''}" id="verdict">${verdictText()}</p>
     <div id="answers">${drill.mode === 'find' ? keyboardHTML()
       : drill.mode === 'key' ? keyNamesHTML()
@@ -1191,11 +1187,20 @@ const answer = (val, btn) => {
   }
 }
 
+// picks the right staff renderer for whichever drill mode is active — used both
+// for the initial render and to redraw the staff in its answered colour,
+// so the two can never drift out of sync with each other
+const drillStaffSVG = () => drill.mode === 'key'
+  ? keySigStaffSVG(KEYS[drill.keyIdx], drill.state)
+  : drill.mode === 'solfege'
+  ? solfegeStaffSVG(drill.d, KEYS[drill.keyIdx], drill.state)
+  : staffSVG(drill.d, drill.state);
+
 const renderVerdictOnly = () => {
   const vd = document.getElementById('verdict');
   vd.textContent = verdictText();
   vd.className = 'verdict ' + (drill.state === 'ok' ? 'ok' : 'no');
-  document.querySelector('.staffwrap').innerHTML = staffSVG(drill.d, drill.state);
+  document.querySelector('.staffwrap').innerHTML = drillStaffSVG();
   if (drill.state === 'no') {
     document.querySelectorAll('[data-answer]').forEach(b => {
       b.onclick = () => advance();
@@ -1687,7 +1692,7 @@ const yBass   = d => 130 - (d - 18) * 5;
 const melKeyLabel = mel => mel.minor
   ? `${mel.key.relName} minor` : `${mel.key.name} major`;
 
-const melodySVG = (mel, clefFn, mark, askBar) => {
+const melodySVG = (mel, clefFn, mark, askBar, hideKey) => {
   const hasT = !!mel.bars, hasB = !!mel.bass;
   const grand = hasT && hasB;
   // a lone bass staff is drawn in the upper slot, with the bass clef moved to it
@@ -1792,7 +1797,7 @@ const melodySVG = (mel, clefFn, mark, askBar) => {
     out += `<g transform="translate(0,${sys * sysH})">${g}</g>`;
   }
   return `<svg viewBox="0 0 ${right + 8} ${sysH + botExtent}" xmlns="http://www.w3.org/2000/svg"
-    role="img" aria-label="Generated eight-bar sight-reading exercise in ${melKeyLabel(mel)}${askBar ? '. Tap a bar to mark where you stumbled.' : ''}">${out}</svg>`;
+    role="img" aria-label="Generated eight-bar sight-reading exercise${hideKey ? '' : ' in ' + melKeyLabel(mel)}${askBar ? '. Tap a bar to mark where you stumbled.' : ''}">${out}</svg>`;
 }
 
 const noteGlyph = (x, y, dur, colour, withStem, mid) => {
@@ -2725,6 +2730,7 @@ const stepPicker = () => {
 let mel = null, melPlaying = false;
 // the melody just judged, so it can be brought back to work on
 let prevMel = null, lastVerdict = null, askBar = false;
+let keyIdentified = false, keyIdMsg = '';
 // pending "lock and flash" timeout from tapping a bar in activateBar(); cancelled
 // on the next renderSight() or on leaving the sight tab so it can't fire stale
 let stumbleTimer = null;
@@ -2754,6 +2760,7 @@ const newMelody = () => {
   const reach = focus === 'outPos' ? Math.min(2, step.reach + 1) : step.reach;
   mel = genMelody(step.rhythm, (Math.random() * 1e9) | 0, keyByName(name), wantMinor,
     { hand: step.hand, reach, focus });
+  keyIdentified = false; keyIdMsg = '';
 }
 
 const trebleOnlyClefs = () => { return clefs().split('</g>')[0] + '</g>'; }
@@ -2807,14 +2814,19 @@ const renderSight = () => {
       : `Tune in the ${mel.hand === 'left' ? 'left' : 'right'} hand; ${other.toLowerCase()} hand holds one note per bar. Learn each alone first, then together.`;
 
   v.innerHTML = `
-    <p class="eyebrow">Generated \u00b7 eight bars \u00b7 ${melKeyLabel(mel)} \u00b7 step ${stepIndex() + 1}</p>
+    <p class="eyebrow">Generated \u00b7 eight bars${keyIdentified ? ` \u00b7 ${melKeyLabel(mel)}` : ''} \u00b7 step ${stepIndex() + 1}</p>
     <h2>Sight-read this once</h2>
-    <p style="max-width:56ch;font-size:14px"><b>${keyNote}</b></p>
+    ${keyIdentified
+      ? `<p style="max-width:56ch;font-size:14px"><b>${keyNote}</b></p>`
+      : `<p style="max-width:56ch;font-size:14px"><b>Which key signature is this?</b> Read it off the staff below before you start.</p>
+         <div class="row" style="margin-bottom:8px">${KEYS.map(k =>
+           `<button class="btn small" data-keyid="${k.name}">${k.name}</button>`).join('')}</div>
+         ${keyIdMsg ? `<p style="font-size:13px;color:var(--red);margin:0 0 8px">${keyIdMsg}</p>` : ''}`}
     <p style="max-width:56ch;font-size:14px">${hands} Play it through <b>once, without stopping</b>, even if you fumble. Stopping to fix things turns sight-reading into memorising \u2014 a different skill, and not the one this trains.</p>
     <div id="melscore" style="${checkRunning
         ? 'position:sticky;top:0;z-index:5;background:var(--page);box-shadow:0 6px 10px -8px rgba(0,0,0,.35);'
         : ''}border:1px solid var(--rule);padding:10px 4px;margin:14px 0;overflow-x:auto">
-      ${melodySVG(mel, clefsFor, null, askBar)}
+      ${melodySVG(mel, clefsFor, null, askBar, !keyIdentified)}
     </div>
 
     <p class="eyebrow" style="margin-top:20px">How did it go?</p>
@@ -2865,10 +2877,10 @@ const renderSight = () => {
     <p class="eyebrow" style="margin-top:24px">Hear it played</p>
     ${playAlongPanel()}
 
-    <details class="ref" open style="margin-top:4px">
+    ${keyIdentified ? `<details class="ref" open style="margin-top:4px">
       <summary>Where do my fingers go?</summary>
       <div style="margin-top:12px">${fingeringDiagram(mel)}</div>
-    </details>
+    </details>` : ''}
     <div class="row" style="margin-top:16px">
       <button class="btn primary" id="fresh">New melody</button>
       <button class="btn" id="hear" ${S.muted ? 'disabled' : ''}>Hear it</button>
@@ -2911,6 +2923,11 @@ const renderSight = () => {
     </details>
     <p style="font-size:13px;color:var(--soft);margin-top:24px;max-width:56ch">Only call it clean if you got through without stopping and without a wrong note you noticed. <b>Two</b> different melodies clean in a row ticks off the this step \u2014 two rather than three, because a checkpoint you keep falling just short of stops being a checkpoint. A stumble resets the count; the point is only that it was not a fluke.</p>`;
 
+  v.querySelectorAll('[data-keyid]').forEach(b => b.onclick = () => {
+    if (b.dataset.keyid === mel.key.name) { keyIdentified = true; keyIdMsg = ''; }
+    else keyIdMsg = 'Not quite \u2014 look again.';
+    renderSight();
+  });
   document.getElementById('fresh').onclick = () => {
     stopPlayAlong(true);
     if (tapState !== 'off') stopRhythm();
