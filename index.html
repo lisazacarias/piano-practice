@@ -1500,6 +1500,38 @@ const genMelody = (stage, seed, key, minor, opts) => {
       deltas.push(d);
     }
     if (moved === 0 && deltas.length > 1) deltas[1] = rnd() < 0.5 ? 1 : 2;
+
+    // reach only widens where the walk is *allowed* to go — nothing above biases
+    // it to actually go there, so a "reaching out" step could silently generate
+    // a melody that never leaves the five-finger position. Force one note out
+    // if the walk didn't wander there on its own. Uses the real clamp(), not a
+    // reimplementation of its bounds — melTonic can sit right at the instrument's
+    // floor or ceiling (e.g. a right-hand C-major tune starts on MIDDLE_C itself),
+    // which silently caps away one direction regardless of what down/up allow.
+    if ((down > 0 || up > 0) && deltas.length > 2) {
+      let cur = melTonic;
+      const positions = [cur];
+      for (let i = 1; i < deltas.length; i++) {
+        cur = clamp(cur + deltas[i]);
+        positions.push(cur);
+      }
+      if (!positions.some(p => p - melTonic < 0 || p - melTonic > 4)) {
+        const canGoLow = clamp(melTonic - down) < melTonic;
+        const canGoHigh = clamp(melTonic + 4 + up) > melTonic + 4;
+        if (canGoLow || canGoHigh) {
+          const goLow = canGoLow && (!canGoHigh || rnd() < 0.5);
+          // nudge whichever note already sits closest to that edge — the
+          // smallest possible push, so the forced note crosses the position
+          // without also reading as an unrelated leap
+          let i = 1;
+          for (let k = 2; k < positions.length - 1; k++) { // never the last note
+            if (goLow ? positions[k] < positions[i] : positions[k] > positions[i]) i = k;
+          }
+          const target = goLow ? clamp(melTonic - 1) : clamp(melTonic + 5);
+          deltas[i] = target - positions[i - 1];
+        }
+      }
+    }
     return { rhythms, deltas };
   }
 

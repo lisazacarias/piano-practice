@@ -71,9 +71,13 @@ test('stumble analysis finds a real pattern', () => {
   const app = loadApp();
   app.S = app.normalize(app.blank());
   app.S.sight.step = 6;
-  // a learner who always trips on the bar containing the biggest leap
+  // a learner who always trips on the bar containing the biggest leap.
+  // reach: 0 keeps this a clean single-cause fixture — at reach > 0, the
+  // generator now guarantees a genuine out-of-position note per melody
+  // (see generator.test.mjs), which often coincides with the biggest leap
+  // and would confound this test's one-cause premise.
   for (let k = 0; k < 16; k++) {
-    const m = app.genMelody(1, 300 + k, app.keyByName('C'), false, { hand: 'both', reach: 1 });
+    const m = app.genMelody(1, 300 + k, app.keyByName('C'), false, { hand: 'both', reach: 0 });
     app.mel = m;
     let worst = 0, best = -1;
     app.melodyBars(m).forEach((_, i) => {

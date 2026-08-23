@@ -90,6 +90,21 @@ test('eighth notes appear only where the step allows', () => {
   });
 });
 
+test('a reaching step actually reaches, not just permits it', () => {
+  app.STEPS.forEach((step, i) => {
+    if (step.reach === 0) return;
+    for (const kn of step.keys) for (let seed = 1; seed <= 40; seed++) {
+      const m = app.genMelody(step.rhythm, seed, app.keyByName(kn), false,
+        { hand: step.hand, reach: step.reach });
+      const usesReach = app.melodyBars(m).flat().some(n => {
+        const off = n.d - m.melTonic;
+        return off < 0 || off > 4;
+      });
+      assert.ok(usesReach, `step ${i + 1} seed ${seed} (${kn}) never left the five-finger position`);
+    }
+  });
+});
+
 test('a raised seventh sits one semitone below the minor tonic', () => {
   ['C', 'G', 'D', 'F', 'B\u266d', 'E\u266d'].forEach(kn => {
     const k = app.keyByName(kn);
