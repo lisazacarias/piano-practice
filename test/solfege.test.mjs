@@ -63,6 +63,23 @@ test('solfegeHTML renders one button per syllable, for the right mode', () => {
   assert.ok(!majorHtml.includes('data-answer="me"'), 'major buttons should not offer the minor 3rd');
 });
 
+test('the solfege drill mode renders cleanly across every key, major and minor', () => {
+  for (let i = 0; i < 40; i++) {
+    const fresh = loadApp();
+    fresh.S = fresh.normalize(fresh.blank());
+    fresh.S.primerSeen = true;
+    fresh.tab = 'reading';
+    fresh.drill = { d: null, keyIdx: null, mode: 'solfege', minor: false, state: null, t0: 0, round: null, done: false };
+    fresh.render();
+    const html = fresh.store.view.innerHTML || '';
+    assert.ok(html.length > 0, `round ${i}: rendered empty`);
+    assert.ok(!/NaN|undefined/.test(html), `round ${i}: contains NaN or undefined`);
+    assert.ok(/major|minor/.test(html), `round ${i}: doesn't say which key is in play`);
+    if (fresh.drill.minor) assert.ok(fresh.MINOR_OK.includes(fresh.KEYS[fresh.drill.keyIdx].name),
+      `round ${i}: drilled a minor key the app doesn't otherwise generate minor material for`);
+  }
+});
+
 test('every key names all seven scale degrees without NaN or undefined', () => {
   app.KEYS.forEach(k => {
     for (let i = 0; i < 7; i++) {

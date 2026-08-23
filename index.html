@@ -870,13 +870,13 @@ const fmt = sec => `${Math.floor(sec / 60)}:${String(Math.max(0, sec % 60)).padS
 const today = () => new Date().toISOString().slice(0, 10);
 
 // ---------- reading drill ----------
-let drill = { d: null, keyIdx: null, mode: 'find', state: null, t0: 0, round: null, done: false };
+let drill = { d: null, keyIdx: null, mode: 'find', minor: false, state: null, t0: 0, round: null, done: false };
 let showLM = false;
 let namingIdx = 0;
 const ROUND_LEN = 20;
 // The benchmark is 20 notes in 30 seconds. Clicking a key costs motor time
 // that naming out loud does not, so the two modes get different benchmarks.
-const TARGET = { name: 1.5, find: 3.0, key: 3.0 };
+const TARGET = { name: 1.5, find: 3.0, key: 3.0, solfege: 3.0 };
 
 const startRound = () => {
   drill.round = { n: 0, correct: 0, secs: 0 };
@@ -925,6 +925,12 @@ const newQuestion = () => {
     do { i = Math.floor(Math.random() * KEYS.length); } while (i === drill.keyIdx);
     drill.keyIdx = i;
   } else {
+    if (drill.mode === 'solfege') {
+      let i;
+      do { i = Math.floor(Math.random() * KEYS.length); } while (i === drill.keyIdx);
+      drill.keyIdx = i;
+      drill.minor = MINOR_OK.includes(KEYS[i].name) && Math.random() < 0.5;
+    }
     let d;
     do { d = LOW + Math.floor(Math.random() * (HIGH - LOW + 1)); } while (d === drill.d);
     drill.d = d;
@@ -1034,21 +1040,28 @@ const renderReading = () => {
   v.innerHTML = `
     <p class="eyebrow">Note drill \u00b7 ${Math.min(ROUND_LEN, drill.round.n + 1)} of ${ROUND_LEN}</p>
     <h2>${drill.mode === 'find' ? 'Play the note'
-      : drill.mode === 'key' ? 'Which major key?' : 'Name the note'}</h2>
+      : drill.mode === 'key' ? 'Which major key?'
+      : drill.mode === 'solfege' ? `Name the syllable — ${drill.minor ? KEYS[drill.keyIdx].relName + ' minor' : KEYS[drill.keyIdx].name + ' major'}`
+      : 'Name the note'}</h2>
     <div class="row" style="margin-bottom:8px">
       <button class="btn small ${drill.mode === 'find' ? 'primary' : ''}" data-mode="find">Find the key</button>
       <button class="btn small ${drill.mode === 'name' ? 'primary' : ''}" data-mode="name">Name the letter</button>
       <button class="btn small ${drill.mode === 'key' ? 'primary' : ''}" data-mode="key">Name the key</button>
+      <button class="btn small ${drill.mode === 'solfege' ? 'primary' : ''}" data-mode="solfege">Name the solfège</button>
       <button class="btn small ${showLM ? 'primary' : ''}" id="lm">Landmarks</button>
       <button class="btn small" id="mute" style="margin-left:auto">${S.muted ? 'Sound off' : 'Sound on'}</button>
     </div>
     ${showLM ? `<div style="border:1px solid var(--rule);padding:8px 4px;margin-bottom:12px">${landmarkSVG()}</div>` : ''}
     <div class="staffwrap">${drill.mode === 'key'
       ? keySigStaffSVG(KEYS[drill.keyIdx], drill.state)
+      : drill.mode === 'solfege'
+      ? solfegeStaffSVG(drill.d, KEYS[drill.keyIdx], drill.state)
       : staffSVG(drill.d, drill.state)}</div>
     <p class="verdict ${drill.state === 'ok' ? 'ok' : drill.state === 'no' ? 'no' : ''}" id="verdict">${verdictText()}</p>
     <div id="answers">${drill.mode === 'find' ? keyboardHTML()
-      : drill.mode === 'key' ? keyNamesHTML() : lettersHTML()}</div>
+      : drill.mode === 'key' ? keyNamesHTML()
+      : drill.mode === 'solfege' ? solfegeHTML(drill.minor)
+      : lettersHTML()}</div>
     ${audioHint()}
     ${drill.mode === 'key' ? `<details class="ref" id="namebox" ${S.namingSeen ? '' : 'open'}>
       <summary>How do you work out the name from the signature?</summary>
@@ -1083,6 +1096,12 @@ const verdictText = () => {
     if (drill.state === 'ok') return `Yes \u2014 or ${k.relName} minor, same signature.`;
     if (drill.state === 'no') return `That was ${k.name} major, or ${k.relName} minor \u2014 ${keyRule(k)}`;
     return 'Read the signature, not the notes.';
+  }
+  if (drill.mode === 'solfege') {
+    const syllable = solfegeSyllable(drill.d, KEYS[drill.keyIdx], drill.minor);
+    if (drill.state === 'ok') return 'Yes.';
+    if (drill.state === 'no') return `That was ${syllable} (${nameOf(drill.d)}).`;
+    return 'Which syllable is this, in the key shown?';
   }
   if (drill.state === 'ok') return 'Yes.';
   if (drill.state === 'no') return `That was ${nameOf(drill.d)}.`;
@@ -1135,6 +1154,7 @@ const answer = (val, btn) => {
   if (drill.state) { advance(); return; }
   const correct = drill.mode === 'find' ? String(drill.d) === val
     : drill.mode === 'key' ? KEYS[drill.keyIdx].name === val
+    : drill.mode === 'solfege' ? solfegeSyllable(drill.d, KEYS[drill.keyIdx], drill.minor) === val
     : letterOf(drill.d) === val;
   // sound the key you actually pressed, then the right one if you missed it
   if (drill.mode !== 'key') {
@@ -1149,7 +1169,9 @@ const answer = (val, btn) => {
   if (correct) drill.round.correct++;
   const st = S.drill;
   st.asked++;
-  const key = drill.mode === 'key' ? KEYS[drill.keyIdx].name + ' maj' : nameOf(drill.d);
+  const key = drill.mode === 'key' ? KEYS[drill.keyIdx].name + ' maj'
+    : drill.mode === 'solfege' ? `${KEYS[drill.keyIdx].name}${drill.minor ? 'm' : ''}:${nameOf(drill.d)}`
+    : nameOf(drill.d);
   st.perNote[key] = st.perNote[key] || { a: 0, r: 0 };
   st.perNote[key].a++;
   if (correct) {
