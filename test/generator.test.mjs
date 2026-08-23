@@ -116,3 +116,20 @@ test('a raised seventh sits one semitone below the minor tonic', () => {
     assert.equal(gap, 1, `${k.relName} minor: raised 7th is ${gap} semitones below home`);
   });
 });
+
+test('askBar draws one tappable hit-region per bar, sized to the score', () => {
+  const bothStep = app.STEPS.find(s => s.hand === 'both');
+  const rightStep = app.STEPS.find(s => s.hand === 'right');
+  [bothStep, rightStep].forEach(step => {
+    const m = app.genMelody(step.rhythm, 1, app.keyByName(step.keys[0]), false,
+      { hand: step.hand, reach: step.reach });
+    const svgOff = app.melodySVG(m, app.clefsFor, null);
+    const svgOn = app.melodySVG(m, app.clefsFor, null, true);
+    const barred = [...svgOn.matchAll(/data-bar="(\d+)"/g)].map(x => +x[1]).sort((a, b) => a - b);
+    assert.deepEqual(barred, [0, 1, 2, 3, 4, 5, 6, 7], `${step.hand}: expected 8 hit-regions`);
+    assert.ok(!svgOff.includes('data-bar='), `${step.hand}: score must not be tappable when askBar is omitted`);
+    const expectedHeight = step.hand === 'both' ? 152 : 104;
+    assert.ok(svgOn.includes(`height="${expectedHeight}"`),
+      `${step.hand}: hit-region should span the full ${expectedHeight}px staff height`);
+  });
+});

@@ -1616,7 +1616,7 @@ const yBass   = d => 130 - (d - 18) * 5;
 const melKeyLabel = mel => mel.minor
   ? `${mel.key.relName} minor` : `${mel.key.name} major`;
 
-const melodySVG = (mel, clefFn, mark) => {
+const melodySVG = (mel, clefFn, mark, askBar) => {
   const hasT = !!mel.bars, hasB = !!mel.bass;
   const grand = hasT && hasB;
   // a lone bass staff is drawn in the upper slot, with the bass clef moved to it
@@ -1711,6 +1711,10 @@ const melodySVG = (mel, clefFn, mark) => {
         g += `<line x1="${bx - 1}" y1="30" x2="${bx - 1}" y2="${bottomY}" stroke="var(--ink)" stroke-width="3"/>`;
       } else {
         g += `<line x1="${bx}" y1="30" x2="${bx}" y2="${bottomY}" stroke="var(--ink)"/>`;
+      }
+      if (askBar) {
+        g += `<rect class="stumble-hit" data-bar="${idx}" x="${bx0}" y="0"
+              width="${BARW}" height="${sysH}"/>`;
       }
     }
     out += `<g transform="translate(0,${sys * sysH})">${g}</g>`;
