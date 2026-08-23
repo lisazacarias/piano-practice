@@ -120,6 +120,27 @@ test('a reaching melody stretches only one direction, never both', () => {
   });
 });
 
+test('focus: turn produces more direction changes than ordinary material', () => {
+  const step = app.STEPS.find(s => s.hand === 'both');
+  const key = app.keyByName(step.keys[0]);
+  const countTurnBars = focus => {
+    let turnBars = 0, totalBars = 0;
+    for (let seed = 1; seed <= 60; seed++) {
+      const m = app.genMelody(step.rhythm, seed, key, false,
+        { hand: step.hand, reach: step.reach, focus });
+      app.melodyBars(m).forEach((_, i) => {
+        totalBars++;
+        if (app.barFeatures(m, i).turn) turnBars++;
+      });
+    }
+    return turnBars / totalBars;
+  };
+  const ordinary = countTurnBars(null);
+  const turny = countTurnBars('turn');
+  assert.ok(turny > ordinary * 1.5,
+    `expected focus:turn to noticeably raise direction changes, got ${turny.toFixed(2)} vs ordinary ${ordinary.toFixed(2)}`);
+});
+
 test('a raised seventh sits one semitone below the minor tonic', () => {
   ['C', 'G', 'D', 'F', 'B\u266d', 'E\u266d'].forEach(kn => {
     const k = app.keyByName(kn);

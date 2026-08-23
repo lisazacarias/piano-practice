@@ -1562,12 +1562,20 @@ const genMelody = (stage, seed, key, minor, opts) => {
   // focus tilts the material toward one difficulty without changing anything else
   const focus = opts.focus || null;
   const leapy = focus === 'leap';
+  const turny = focus === 'turn';
+  let lastSign = 0;
   const stepDelta = () => {
     const r = rnd();
     const stepChance = leapy ? 0.32 : 0.68;
-    return r < stepChance ? (rnd() < 0.5 ? 1 : -1)
-         : r < 0.97 ? (rnd() < 0.5 ? 1 : -1) * (leapy ? 3 + Math.floor(rnd() * 3) : 2 + Math.floor(rnd() * 2))
+    // turny biases the new step to reverse the previous one, rather than a
+    // fresh coin flip each time — that's what makes a line zigzag instead of
+    // wandering in one direction for a while before turning
+    const sign = (turny && lastSign && rnd() < 0.75) ? -lastSign : (rnd() < 0.5 ? 1 : -1);
+    const delta = r < stepChance ? sign
+         : r < 0.97 ? sign * (leapy ? 3 + Math.floor(rnd() * 3) : 2 + Math.floor(rnd() * 2))
          : 0;
+    if (delta !== 0) lastSign = Math.sign(delta);
+    return delta;
   };
 
   function makeMotif(nBars) {
@@ -2619,6 +2627,7 @@ const insightPanel = () => {
   const atMaxReach = step.reach >= 2;
   const focusable = k =>
     k === 'leap' ? true :
+    k === 'turn' ? true :
     k === 'eighths' ? canEighths :
     k === 'outPos' ? !atMaxReach : false;
   const cur = S.sight.focus || null;
