@@ -1336,6 +1336,19 @@ const KEYS = [
 // F#minor's raised 7th is E#, which is correct theory but a bad first encounter,
 // so minor generation skips the three-sharp signature
 const MINOR_OK = ['C','G','D','F','B\u266d','E\u266d'];
+
+// Movable-do, do-based minor. The syllable names a scale DEGREE \u2014 the letter's
+// distance from the tonic \u2014 so it never looks at the key's sharps/flats: G
+// major's 7th degree is "ti" whether or not it happens to be printed as F#.
+// Minor is renumbered so its own tonic is "do", with altered syllables for the
+// naturally-flatted 3rd, 6th and 7th degrees (me, le, te).
+const SOLFEGE_MAJOR = ['do', 're', 'mi', 'fa', 'sol', 'la', 'ti'];
+const SOLFEGE_MINOR = ['do', 're', 'me', 'fa', 'sol', 'le', 'te'];
+const solfegeSyllable = (d, key, minor) => {
+  const tonicLetter = minor ? key.rel : key.tonic;
+  const degree = ((LETTERS.indexOf(letterOf(d)) - LETTERS.indexOf(tonicLetter)) % 7 + 7) % 7;
+  return (minor ? SOLFEGE_MINOR : SOLFEGE_MAJOR)[degree];
+};
 // Difficulty is black keys under the five-finger position PLUS accidentals to
 // read in the signature — C 0, G 1, F 2, D 3, B\u266d 4, A 4, E\u266d 6.
 // A shuffled bag, not independent draws. Uniform random repeated the previous
