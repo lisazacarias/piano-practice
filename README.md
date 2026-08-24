@@ -2,7 +2,7 @@
 
 A sight-reading trainer. Generates eight-bar melodies as real notation, plays
 them back with a click, drills note and key-signature reading, and tracks
-progress along a twelve-step ladder.
+progress along a thirteen-step ladder.
 
 The whole app is one self-contained `index.html` — no build step, no
 dependencies, no backend. Open the file and it works.
