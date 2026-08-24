@@ -73,7 +73,7 @@ test('clearing a step unlocks exactly the next one', () => {
 
 test('the directive always names a real tab and says something', () => {
   const app = loadApp();
-  const TABS = ['sight', 'practice', 'reading', 'learn', 'progress'];
+  const TABS = ['sight', 'reading', 'learn', 'progress'];
   for (let step = 0; step < app.STEPS.length; step++)
     for (const cleared of [0, step, app.STEPS.length]) {
       app.S = app.normalize(app.blank());
@@ -88,7 +88,7 @@ test('the directive always names a real tab and says something', () => {
 
 test('every tab renders in every state', () => {
   const app = loadApp();
-  const TABS = ['sight', 'practice', 'reading', 'learn', 'progress'];
+  const TABS = ['sight', 'reading', 'learn', 'progress'];
   for (let step = 0; step < app.STEPS.length; step += 2)
     for (const cleared of [0, step, app.STEPS.length]) {
       for (const t of TABS) {

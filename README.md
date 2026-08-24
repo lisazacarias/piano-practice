@@ -52,6 +52,10 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
   the first render; and the Sight tab's fingering diagram stays hidden, along
   with the key name everywhere it would otherwise appear, until the key
   signature is identified correctly.
+- **Practice sessions** — a running session's timer, slot name, and
+  pause/resume/done controls show up in the persistent strip on every tab, not
+  just Progress (where the session is started and the full slot list lives),
+  and switching tabs never re-renders a tab that a slot toggle didn't touch.
 
 ## Where your data lives
 

@@ -170,7 +170,6 @@
 
     <nav role="tablist">
       <button role="tab" data-tab="sight" aria-selected="true">Read</button>
-      <button role="tab" data-tab="practice" aria-selected="false">Practice</button>
       <button role="tab" data-tab="reading" aria-selected="false">Drills</button>
       <button role="tab" data-tab="learn" aria-selected="false">Learn</button>
       <button role="tab" data-tab="progress" aria-selected="false">Progress</button>
@@ -760,8 +759,8 @@ let ticker = null;
 const slotSpent = s => s.spent + (s.running && s.startedAt ? (Date.now() - s.startedAt) / 1000 : 0);
 const slotLeft = s => Math.max(0, Math.round(s.total - slotSpent(s)));
 
-const renderPractice = () => {
-  const v = document.getElementById('view');
+const renderPractice = (targetId) => {
+  const v = document.getElementById(targetId || 'view');
   if (!S.session) {
     v.innerHTML = `
       <p class="eyebrow">Start here</p>
@@ -809,8 +808,17 @@ const renderPractice = () => {
   v.querySelectorAll('[data-toggle]').forEach(b => b.onclick = () => toggleSlot(+b.dataset.toggle));
   v.querySelectorAll('[data-done]').forEach(b => b.onclick = () => finishSlot(+b.dataset.done));
   document.getElementById('endsess').onclick = endSession;
-  document.getElementById('cancelsess').onclick = () => { stopTicker(); S.session = null; save(); render(); };
+  document.getElementById('cancelsess').onclick = () => { stopTicker(); S.session = null; save(); refreshSession(); };
   wireMetronome(v);
+}
+
+// Session state lives in the Progress tab's sesspane, but the timer needs to
+// stay visible and controllable from any tab via the persistent strip. This
+// updates whichever of those is actually on screen instead of always
+// re-rendering #view, which would clobber a tab that isn't Progress.
+const refreshSession = () => {
+  if (tab === 'progress') renderPractice('sesspane');
+  renderNow();
 }
 
 const startSession = (mins) => {
@@ -818,7 +826,7 @@ const startSession = (mins) => {
     mins,
     slots: PLANS[mins].map(([id, m]) => ({ id, total: m * 60, spent: 0, running: false, startedAt: null, done: false }))
   };
-  save(); render();
+  save(); refreshSession();
 }
 
 const pauseSlot = (x) => {
@@ -831,7 +839,7 @@ const toggleSlot = (i) => {
   s.slots.forEach(pauseSlot);
   if (!wasRunning) { s.slots[i].running = true; s.slots[i].startedAt = Date.now(); startTicker(); }
   else stopTicker();
-  save(); renderPractice();
+  save(); refreshSession();
 }
 
 const finishSlot = (i) => {
@@ -839,7 +847,7 @@ const finishSlot = (i) => {
   pauseSlot(x);
   x.done = true;
   if (!S.session.slots.some(y => y.running)) stopTicker();
-  save(); renderPractice();
+  save(); refreshSession();
 }
 
 const startTicker = () => {
@@ -850,6 +858,8 @@ const startTicker = () => {
     if (i < 0) return stopTicker();
     const el = document.getElementById('clk' + i);
     if (el) el.textContent = fmt(slotLeft(s.slots[i]));
+    // duplicated into both the header and footer strip, so update every copy
+    document.querySelectorAll('.nowclk').forEach(c => c.textContent = fmt(slotLeft(s.slots[i])));
     if (slotLeft(s.slots[i]) <= 0) { finishSlot(i); save(); }
   }, 500);
 }
@@ -1315,7 +1325,7 @@ const renderLog = (targetId) => {
           <span>${e.date}</span>
           <div style="flex:1;padding:0 12px;color:var(--soft);font-size:13px">${e.slots.join(', ') || '\u2014'}</div>
           <span>${e.mins}m</span></div>`).join('')
-      : '<p class="empty-state">Run a session from the Practice tab and it lands here.</p>'}
+      : '<p class="empty-state">Start a session above and it lands here.</p>'}
     <div style="margin-top:26px">${readingTrend()}</div>
 
     <details class="ref" style="margin-top:26px">
@@ -3237,7 +3247,9 @@ const renderProgress = () => {
       }).join('')}
     </div>
     <p style="margin-top:18px;font-size:14px;color:var(--soft);max-width:58ch">${WINDOW_TARGET} of your last ${WINDOW} clean reads clears a step and opens the next \u2014 not a streak, so one stumble does not undo your progress. Explanations for anything here \u2014 landmarks, key signatures, minors, fingering \u2014 are in the <b>Learn</b> tab.</p>
+    <div id="sesspane" style="margin-top:34px;border-top:1px solid var(--rule);padding-top:22px"></div>
     <div id="logpane" style="margin-top:34px;border-top:1px solid var(--rule);padding-top:22px"></div>`;
+  renderPractice('sesspane');
   renderLog('logpane');
   document.querySelectorAll('[data-gostep]').forEach(b => b.onclick = () => {
     S.sight.step = +b.dataset.gostep; save(); newMelody(); switchTab('sight');
@@ -3249,7 +3261,7 @@ const nextAction = () => {
   const st = S.drill;
   const loggedToday = S.log.some(e => e.date === today());
 
-  if (S.session) return { tab: 'practice', text: 'You have a session open. Finish the slots, then log it.' };
+  if (S.session) return { tab: 'progress', text: 'You have a session open. Finish the slots, then log it.' };
 
   if (!S.primerSeen) return { tab: 'reading',
     text: 'Two minutes first: the four bass-clef landmarks. Everything else reads off them, so this is the one thing worth doing before anything else.' };
@@ -3269,17 +3281,38 @@ const nextAction = () => {
   if (!stepPassed(cur)) return { tab: 'sight',
     text: `Step ${cur + 1} of ${STEPS.length}: ${STEPS[cur].label}. ${windowProgressText(cur)} clears it and opens the next.` };
 
-  if (!loggedToday) return { tab: 'practice',
+  if (!loggedToday) return { tab: 'progress',
     text: 'Reading is moving. Pick how long you have and work the slots \u2014 the repertoire slot is the one the app cannot do for you.' };
 
   return { tab: 'sight',
     text: 'Logged for today \u2014 that is enough. If you want more, one more melody is the best use of a spare five minutes.' };
 }
 
+// While a session slot is still open, the strip shows live controls for it
+// instead of the generic directive — that is the one thing worth seeing and
+// touching from any tab, since the whole point of a session timer is staying
+// visible while you are doing something else (reading, drilling).
+const sessionStripBlock = () => {
+  const s = S.session;
+  const i = s.slots.findIndex(x => !x.done);
+  if (i < 0) return null;
+  const x = s.slots[i], def = SLOTS[x.id];
+  return `<div class="now">
+    <p class="eyebrow">Session running \u00b7 slot ${i + 1} of ${s.slots.length}</p>
+    <p><b>${def.name}</b></p>
+    <div class="row" style="align-items:baseline;gap:10px">
+      <span class="nowclk" style="font-family:var(--mono);font-size:22px">${fmt(slotLeft(x))}</span>
+      <button class="btn small" data-nowtoggle="${i}">${x.running ? 'Pause' : x.spent > 0 ? 'Resume' : 'Start'}</button>
+      <button class="btn small" data-nowdone="${i}">Done</button>
+    </div>
+  </div>`;
+};
+
 const renderNow = () => {
   const a = nextAction();
   const here = tab === a.tab;
-  const block = (withBtn) => `<div class="now">
+  const sess = S.session ? sessionStripBlock() : null;
+  const block = (withBtn) => sess || `<div class="now">
     <p class="eyebrow">Do this now</p>
     <p>${a.text}</p>
     ${withBtn ? '<div class="row"><button class="btn primary small" data-goto="1">Take me there</button></div>' : ''}
@@ -3289,6 +3322,8 @@ const renderNow = () => {
   const foot = document.getElementById('nowfoot');
   const showFoot = !(tab === 'reading' && !S.primerSeen);
   foot.innerHTML = showFoot ? `<div style="margin-top:28px">${block(!here)}</div>` : '';
+  document.querySelectorAll('[data-nowtoggle]').forEach(b => b.onclick = () => toggleSlot(+b.dataset.nowtoggle));
+  document.querySelectorAll('[data-nowdone]').forEach(b => b.onclick = () => finishSlot(+b.dataset.nowdone));
   document.querySelectorAll('[data-goto]').forEach(b => b.onclick = () => switchTab(a.tab));
   document.querySelectorAll('nav button').forEach(b =>
     b.classList.toggle('rec', b.dataset.tab === a.tab && !here));
@@ -3334,7 +3369,7 @@ const readingTrend = () => {
 }
 
 // ---------- shell ----------
-let tab = 'practice';
+let tab = 'sight';
 // The one path that has to work even when saved data has a shape this
 // version doesn't handle \u2014 a render triggered from here has nowhere else
 // to fall back to (no other tab is guaranteed to render either, since any
@@ -3367,10 +3402,11 @@ const switchTab = (t) => {
   render();
 }
 const render = () => {
-  if (tab !== 'practice' && ticker) stopTicker();
+  // the session ticker is no longer tied to any one tab — it has to keep
+  // running so the persistent strip can show a live countdown from anywhere
   if (tab !== 'sight' && stumbleTimer) { clearTimeout(stumbleTimer); stumbleTimer = null; }
   try {
-    ({ practice: renderPractice, reading: renderReading, sight: renderSight,
+    ({ reading: renderReading, sight: renderSight,
        learn: renderLearn, progress: renderProgress })[tab]();
     renderNow();
   } catch (e) {
@@ -3392,7 +3428,7 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab
     });
     // land where the work is. Only the landmark primer and an open session
     // outrank reading music.
-    tab = !S.primerSeen ? 'reading' : S.session ? 'practice' : nextAction().tab;
+    tab = !S.primerSeen ? 'reading' : S.session ? 'progress' : nextAction().tab;
     document.querySelectorAll('nav button').forEach(b =>
       b.setAttribute('aria-selected', b.dataset.tab === tab));
     renderSpine();

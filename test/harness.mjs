@@ -73,7 +73,8 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     'stepIndex', 'stepPassed', 'unlockedThrough', 'curStep',
     'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'newMelody',
     'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
-    'startSession', 'toggleSlot', 'solfegeSyllable', 'MINOR_OK', 'solfegeStaffSVG',
+    'startSession', 'toggleSlot', 'finishSlot', 'refreshSession', 'renderNow', 'SLOTS',
+    'solfegeSyllable', 'MINOR_OK', 'solfegeStaffSVG',
     'solfegeHTML', 'melKeyLabel', 'drillStaffSVG', 'keySigStaffSVG', 'renderVerdictOnly',
     'effFocus', 'WINDOW', 'WINDOW_TARGET', 'stepWindow', 'stepCleanCount',
     'recordStepOutcome', 'windowProgressText'
