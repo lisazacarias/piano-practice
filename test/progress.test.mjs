@@ -33,6 +33,17 @@ test('the window only ever tracks the most recent attempts', () => {
   assert.deepEqual(app.stepWindow(0), ['ok', 'ok', 'ok', 'no', 'no'], 'should keep only the most recent entries');
 });
 
+test('reaching out is introduced in C alone before mixing in other keys', () => {
+  const app = loadApp();
+  const isolated = app.STEPS.find(s => s.label.includes('reaching out') && s.keys.length === 1);
+  assert.ok(isolated, 'expected a single-key reaching-out step');
+  assert.deepEqual(isolated.keys, ['C']);
+  const idx = app.STEPS.indexOf(isolated);
+  const next = app.STEPS[idx + 1];
+  assert.ok(next && next.label.includes('reaching out') && next.keys.length > 1,
+    'the isolated step should be immediately followed by the multi-key version');
+});
+
 test('clearing a step unlocks exactly the next one', () => {
   const app = loadApp();
   app.S = app.normalize(app.blank());
