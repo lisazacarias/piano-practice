@@ -3335,6 +3335,31 @@ const readingTrend = () => {
 
 // ---------- shell ----------
 let tab = 'practice';
+// The one path that has to work even when saved data has a shape this
+// version doesn't handle \u2014 a render triggered from here has nowhere else
+// to fall back to (no other tab is guaranteed to render either, since any
+// of them can read the same broken S). Shown for a bootstrap failure AND
+// for any later render() failure, e.g. switching tabs after S ended up null.
+const showFatalError = (e) => {
+  console.error('Failed to render', e);
+  const v = document.getElementById('view');
+  v.innerHTML = `
+    <p class="eyebrow" style="color:var(--red)">Something went wrong loading your progress</p>
+    <p style="max-width:56ch;font-size:13px;font-family:var(--mono);color:var(--soft)">${(e && e.message) || String(e)}</p>
+    <p style="max-width:56ch;font-size:14px">This usually means saved progress has a shape this version does not expect. Trying again costs nothing; clearing starts the ladder over from step 1 and loses the practice log and stumble history on this device.</p>
+    <div class="row" style="margin-top:12px">
+      <button class="btn" id="bootretry">Try again</button>
+      <button class="btn primary" id="bootreset">Clear my progress and start over</button>
+    </div>`;
+  document.getElementById('bootretry').onclick = () => location.reload();
+  document.getElementById('bootreset').onclick = () => {
+    if (confirm('This clears all saved progress, drill stats, and practice log on this device. Continue?')) {
+      try { localStorage.removeItem(KEY); } catch (e2) { /* nothing more to try */ }
+      location.reload();
+    }
+  };
+};
+
 const switchTab = (t) => {
   tab = t;
   document.querySelectorAll('nav button').forEach(b =>
@@ -3344,9 +3369,13 @@ const switchTab = (t) => {
 const render = () => {
   if (tab !== 'practice' && ticker) stopTicker();
   if (tab !== 'sight' && stumbleTimer) { clearTimeout(stumbleTimer); stumbleTimer = null; }
-  ({ practice: renderPractice, reading: renderReading, sight: renderSight,
-     learn: renderLearn, progress: renderProgress })[tab]();
-  renderNow();
+  try {
+    ({ practice: renderPractice, reading: renderReading, sight: renderSight,
+       learn: renderLearn, progress: renderProgress })[tab]();
+    renderNow();
+  } catch (e) {
+    showFatalError(e);
+  }
 }
 
 document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab(b.dataset.tab));
@@ -3369,26 +3398,14 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab
     renderSpine();
     render();
   } catch (e) {
-    // Whatever throws here leaves no other way to reach the reset button on
-    // the Progress tab \u2014 the app never gets far enough to show any tab at
-    // all. This is the one path that has to work even when saved data has a
-    // shape this version doesn't handle.
-    console.error('Failed to start', e);
-    v.innerHTML = `
-      <p class="eyebrow" style="color:var(--red)">Something went wrong loading your progress</p>
-      <p style="max-width:56ch;font-size:13px;font-family:var(--mono);color:var(--soft)">${(e && e.message) || String(e)}</p>
-      <p style="max-width:56ch;font-size:14px">This usually means saved progress has a shape this version does not expect. Trying again costs nothing; clearing starts the ladder over from step 1 and loses the practice log and stumble history on this device.</p>
-      <div class="row" style="margin-top:12px">
-        <button class="btn" id="bootretry">Try again</button>
-        <button class="btn primary" id="bootreset">Clear my progress and start over</button>
-      </div>`;
-    document.getElementById('bootretry').onclick = () => location.reload();
-    document.getElementById('bootreset').onclick = () => {
-      if (confirm('This clears all saved progress, drill stats, and practice log on this device. Continue?')) {
-        try { localStorage.removeItem(KEY); } catch (e2) { /* nothing more to try */ }
-        location.reload();
-      }
-    };
+    // deliberately leave S as whatever it was (often still null) — falling
+    // back to blank() here would make other tabs quietly usable again, and
+    // the first save() from that state would overwrite real (if broken)
+    // saved data with a blank slate with no explicit confirmation. Every
+    // render() call while S can't be trusted should hit the same error
+    // screen consistently, via render()'s own try/catch, until the user
+    // explicitly retries or resets.
+    showFatalError(e);
   }
 })();
 </script>
