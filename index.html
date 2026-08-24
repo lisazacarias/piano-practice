@@ -1,4 +1,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#14161A">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <style>
   :root {
     --ground: #E1E4E1;
@@ -3456,4 +3461,14 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab
     showFatalError(e);
   }
 })();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {
+      // offline support is a nicety, not a requirement — a registration
+      // failure (unsupported browser, blocked by an embedding webview)
+      // should never stop the app itself from working
+    });
+  });
+}
 </script>

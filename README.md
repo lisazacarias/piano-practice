@@ -86,10 +86,20 @@ npx vercel deploy --prod      # or: push and enable GitHub Pages
 Serving it from a stable domain is worth doing: `localStorage` is scoped to the
 origin, so a fixed URL means progress that persists indefinitely.
 
+`manifest.json` and `sw.js` make it installable — Add to Home Screen gives it
+an icon and a standalone window, and the service worker caches the app so it
+still opens with no connection. The worker fetches the network first and only
+falls back to its cache on failure, specifically so a push here is never
+masked by a stale cache: reload with a connection and you always get the
+latest version.
+
 ## Layout
 
 ```
 index.html      the entire app
+manifest.json   name, icon, and display mode for Add to Home Screen
+sw.js           service worker: network-first, offline fallback only
+icon-*.png      home-screen icons referenced by manifest.json
 PROGRAM.md      the wider practice programme, most of which the app does not cover
 test/
   harness.mjs   loads index.html into a stub browser
