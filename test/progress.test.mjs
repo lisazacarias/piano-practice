@@ -2,6 +2,22 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { loadApp } from './harness.mjs';
 
+test('the naming reference box never auto-opens next to a live question', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.primerSeen = true;
+  app.tab = 'reading';
+  app.drill = { d: null, keyIdx: 0, mode: 'key', minor: false, state: null, t0: 0, round: { n: 0, correct: 0, secs: 0 }, done: false };
+  [false, true].forEach(namingSeen => {
+    app.S.namingSeen = namingSeen;
+    app.render();
+    const html = app.store.view.innerHTML;
+    assert.ok(html.includes('id="namebox"'), 'the reference box should still exist');
+    assert.ok(!/id="namebox"[^>]*\bopen\b/.test(html),
+      `namebox should not auto-open (namingSeen=${namingSeen}) — it sits next to the live drill question and is easy to mistake for the answer`);
+  });
+});
+
 test('a step clears at 4 of its last 5 outcomes, even with one miss between', () => {
   const app = loadApp();
   app.S = app.normalize(app.blank());

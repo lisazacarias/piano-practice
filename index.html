@@ -1060,7 +1060,7 @@ const renderReading = () => {
       : drill.mode === 'solfege' ? solfegeHTML(drill.minor)
       : lettersHTML()}</div>
     ${audioHint()}
-    ${drill.mode === 'key' ? `<details class="ref" id="namebox" ${S.namingSeen ? '' : 'open'}>
+    ${drill.mode === 'key' ? `<details class="ref" id="namebox">
       <summary>How do you work out the name from the signature?</summary>
       <div style="margin-top:14px">${renderNaming(namingIdx)}</div>
     </details>` : ''}
