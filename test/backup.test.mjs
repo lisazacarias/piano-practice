@@ -109,3 +109,46 @@ test('normalize drops the pre-window-mastery streaks field', () => {
   const s = app.normalize({ ...app.blank(), sight: { streaks: { 0: 4 } } });
   assert.equal(s.sight.streaks, undefined);
 });
+
+test('a fresh state has never been backed up', () => {
+  const app = loadApp();
+  const s = app.blank();
+  assert.equal(s.lastExported, null);
+});
+
+test('downloading a backup records when, so staleness can be judged later', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.tab = 'progress';
+  app.render();
+
+  assert.ok(/have not downloaded a backup yet/i.test(app.store.logpane.innerHTML),
+    'a state that has never been exported should say so');
+
+  app.store.exportbtn.onclick();
+
+  assert.ok(typeof app.S.lastExported === 'number' && app.S.lastExported > 0,
+    'exporting should stamp when it happened');
+  assert.ok(!/have not downloaded/i.test(app.store.backupstatus.textContent),
+    'the status line should update immediately, not just on the next full render');
+});
+
+test('a backup older than a month is flagged as worth refreshing', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.lastExported = Date.now() - 45 * 86400000;
+  app.tab = 'progress';
+  app.render();
+  assert.ok(/45 days ago/.test(app.store.logpane.innerHTML));
+  assert.ok(/worth a fresh copy/i.test(app.store.logpane.innerHTML));
+});
+
+test('a recent backup is noted without urgency', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.lastExported = Date.now() - 3 * 86400000;
+  app.tab = 'progress';
+  app.render();
+  assert.ok(/3 days ago/.test(app.store.logpane.innerHTML));
+  assert.ok(!/worth a fresh copy/i.test(app.store.logpane.innerHTML));
+});

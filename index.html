@@ -194,6 +194,7 @@ const fallback = {};
 const blank = () => ({
   stage: 0,
   log: [],
+  lastExported: null,
   drill: { asked: 0, right: 0, streak: 0, best: 0, perNote: {}, rounds: [] },
   stumbles: [],
   muted: false,
@@ -1310,6 +1311,14 @@ const referenceHTML = () => {
 }
 
 // ---------- log ----------
+const backupStatusText = () => {
+  if (!S.lastExported) return 'You have not downloaded a backup yet.';
+  const days = Math.floor((Date.now() - S.lastExported) / 86400000);
+  if (days <= 0) return 'Backed up today.';
+  if (days >= 30) return `Last backed up ${days} days ago \u2014 worth a fresh copy.`;
+  return `Last backed up ${days} day${days === 1 ? '' : 's'} ago.`;
+};
+
 const renderLog = (targetId) => {
   const v = document.getElementById(targetId || 'view');
   const byDay = {};
@@ -1358,6 +1367,7 @@ const renderLog = (targetId) => {
           <button class="btn primary" id="exportbtn">Download my progress</button>
           <button class="btn" id="importtoggle">Restore from a backup</button>
         </div>
+        <p id="backupstatus" style="font-size:13px;color:var(--soft);margin-top:8px">${backupStatusText()}</p>
         <div id="importbox" style="display:none;margin-top:12px">
           <p style="font-size:13px;color:var(--soft)">Paste the contents of a backup file. This replaces everything currently stored.</p>
           <textarea id="importtext" rows="4" style="width:100%;font-family:var(--mono);font-size:12px;border:1px solid var(--rule);padding:8px"></textarea>
@@ -1380,6 +1390,9 @@ const renderLog = (targetId) => {
       a.download = 'piano-progress-' + today() + '.json';
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 2000);
+      S.lastExported = Date.now(); save();
+      const st = document.getElementById('backupstatus');
+      if (st) st.textContent = backupStatusText();
     } catch (e) {
       const m = document.getElementById('importmsg');
       if (m) m.textContent = 'Could not build the file: ' + e.message;

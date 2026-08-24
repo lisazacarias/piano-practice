@@ -70,6 +70,9 @@ follow you between devices or browsers, and clearing site data wipes it.
 
 Use **Progress → Back up or move your progress** to download a JSON file. That
 export is the only copy you own outright; take one before changing anything.
+That section also tracks when you last did, and says so — a nudge once it's
+been a month, since the file is the only thing that follows you off this
+device.
 
 For genuine cross-device sync you would need a backend — a table keyed by user
 with a JSON blob is enough, and the export format is already the right shape
