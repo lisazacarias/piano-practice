@@ -35,8 +35,10 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
   direction, the raised seventh lands one semitone below each minor tonic, and
   the score exposes one tappable bar per measure when marking a stumble.
 - **Audio** — every step produces audible non-clipping playback, both staves
-  reach the output, written duration is audible in the sound, and the click
-  track holds its beat to under 2ms across tempos.
+  reach the output, written duration is audible in the sound, the click track
+  holds its beat to under 2ms across tempos, and bass notes get a loudness
+  boost (tapering to none by middle C) so they don't sound quieter than
+  treble at the same linear gain.
 - **Progress** — steps unlock in order, the directive always names a real tab,
   every tab renders in every state, keys never repeat back to back, the
   stumble analysis finds real patterns while rarely flagging noise, a step

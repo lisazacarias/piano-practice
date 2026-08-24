@@ -66,3 +66,16 @@ test('the melody enters exactly on the downbeat', () => {
   for (let i = 0; i < pcm.length; i++) if (Math.abs(pcm[i]) > 0.02) { first = i / R; break; }
   assert.ok(Math.abs(first - 4 * spb) < 0.05, `entered at ${first.toFixed(3)}s, expected ${(4 * spb).toFixed(3)}s`);
 });
+
+test('a bass note gets a loudness boost so it does not sound quieter than treble', () => {
+  const bass = peak(app.renderNotes([{ midi: 40, at: 0 }]));   // E2, the app's lowest note
+  const mid = peak(app.renderNotes([{ midi: 60, at: 0 }]));    // middle C, the boost's reference point
+  const treble = peak(app.renderNotes([{ midi: 72, at: 0 }])); // C5
+  assert.ok(bass > mid * 1.3, `bass peak ${bass.toFixed(3)} should clearly exceed middle-C peak ${mid.toFixed(3)}`);
+  assert.ok(Math.abs(mid - treble) < 0.001, `treble should be unboosted: mid ${mid.toFixed(3)} vs treble ${treble.toFixed(3)}`);
+});
+
+test('boosted bass still does not clip when stacked with a treble note', () => {
+  const pcm = app.renderNotes([{ midi: 40, at: 0, len: 1 }, { midi: 76, at: 0, len: 1 }]);
+  assert.ok(peak(pcm) <= 1.0, `stacked bass+treble clips at ${peak(pcm).toFixed(3)}`);
+});
