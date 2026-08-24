@@ -5,6 +5,7 @@
   "description": "Sight-reading trainer: generated notation, play-along, rhythm and note drills.",
   "scripts": {
     "test": "node --test test/*.test.mjs",
+    "smoke": "node test/smoke.mjs",
     "serve": "python3 -m http.server 8080"
   }
 }

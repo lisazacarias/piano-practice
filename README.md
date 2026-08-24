@@ -62,6 +62,21 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
   comes back already running, and the older per-stage and per-streak save
   shapes still migrate onto the current ladder and mastery window.
 
+## Smoke test
+
+```sh
+npm run smoke
+```
+
+`node --test` stubs out the DOM enough that it can't exercise the bootstrap, a
+real click, or anything PWA-related. This drives an actual headless Chrome
+against the real served files instead: a fresh load, every tab, starting a
+session and controlling it from a different tab's persistent strip, a backup
+export/restore round trip (including rejecting a bad one), and that the
+manifest validates, the service worker activates, and the app still renders
+with the network cut off. Requires a local Chrome or Chromium — set
+`CHROME_PATH` if it isn't found automatically.
+
 ## Where your data lives
 
 Progress is kept in `localStorage`, keyed to whatever origin serves the page.
@@ -107,6 +122,7 @@ PROGRAM.md      the wider practice programme, most of which the app does not cov
 test/
   harness.mjs   loads index.html into a stub browser
   *.test.mjs    the suites above
+  smoke.mjs     drives a real browser against the real served files
 ```
 
 ## What this is not
