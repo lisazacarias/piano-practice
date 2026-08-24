@@ -2896,7 +2896,10 @@ const renderSight = () => {
       ${melodySVG(mel, clefsFor, null, askBar, !keyIdentified)}
     </div>
 
-    <p class="eyebrow" style="margin-top:20px">How did it go?</p>
+    <p class="eyebrow" style="margin-top:20px">Hear it played</p>
+    ${playAlongPanel()}
+
+    <p class="eyebrow" style="margin-top:24px">How did it go?</p>
     <div class="row">
       <button class="btn primary" id="cleanbtn">Played it clean</button>
       <button class="btn" id="stumble">I stumbled</button>
@@ -2939,9 +2942,6 @@ const renderSight = () => {
 
     <p class="eyebrow" style="margin-top:24px">Check the rhythm</p>
     ${rhythmPanel()}
-
-    <p class="eyebrow" style="margin-top:24px">Hear it played</p>
-    ${playAlongPanel()}
 
     ${keyIdentified ? `<details class="ref" open style="margin-top:4px">
       <summary>Where do my fingers go?</summary>
