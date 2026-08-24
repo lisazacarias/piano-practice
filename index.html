@@ -3232,7 +3232,7 @@ const renderProgress = () => {
         </div>`;
       }).join('')}
     </div>
-    <p style="margin-top:18px;font-size:14px;color:var(--soft);max-width:58ch">Two clean reads in a row clears a step and opens the next. Explanations for anything here \u2014 landmarks, key signatures, minors, fingering \u2014 are in the <b>Learn</b> tab.</p>
+    <p style="margin-top:18px;font-size:14px;color:var(--soft);max-width:58ch">${WINDOW_TARGET} of your last ${WINDOW} clean reads clears a step and opens the next \u2014 not a streak, so one stumble does not undo your progress. Explanations for anything here \u2014 landmarks, key signatures, minors, fingering \u2014 are in the <b>Learn</b> tab.</p>
     <div id="logpane" style="margin-top:34px;border-top:1px solid var(--rule);padding-top:22px"></div>`;
   renderLog('logpane');
   document.querySelectorAll('[data-gostep]').forEach(b => b.onclick = () => {
