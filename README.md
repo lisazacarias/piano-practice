@@ -56,6 +56,11 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
   pause/resume/done controls show up in the persistent strip on every tab, not
   just Progress (where the session is started and the full slot list lives),
   and switching tabs never re-renders a tab that a slot toggle didn't touch.
+- **Backups and old save shapes** — restoring a backup rejects anything that
+  isn't actually a progress file, a session saved before wall-clock timing (or
+  restored mid-slot) converts cleanly to real numbers instead of NaN and never
+  comes back already running, and the older per-stage and per-streak save
+  shapes still migrate onto the current ladder and mastery window.
 
 ## Where your data lives
 

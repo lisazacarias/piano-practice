@@ -16,7 +16,7 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     setAttribute() {}, getAttribute() {}, scrollIntoView() {},
     appendChild() {}, remove() {}, click() {},
     paused: true, open: false,
-    set onclick(f) {}, set ontoggle(f) {}, set onchange(f) {}, set onkeydown(f) {}
+    onclick: null, ontoggle: null, onchange: null, onkeydown: null
   });
   const node = () => ({
     connect() {}, gain: { setValueAtTime() {}, exponentialRampToValueAtTime() {} },

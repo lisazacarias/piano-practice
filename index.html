@@ -249,6 +249,23 @@ const normalize = (s) => {
   if (s.ignoreSilent === undefined) s.ignoreSilent = true;
   if (!s.engine) s.engine = 'auto';
   s.checks = s.checks || {};
+  // A session can arrive here from a normal load (reopened after the tab or
+  // the whole browser was closed mid-slot) or from restoring a backup, and
+  // either one can be old enough to predate wall-clock timing. Both need the
+  // same reconciliation, so it lives here rather than duplicated at each call
+  // site — an unrecognized shape is dropped rather than left to throw
+  // NaN/undefined into the timer later.
+  if (s.session) {
+    if (Array.isArray(s.session.slots)) {
+      s.session.slots.forEach(x => {
+        if (x.spent === undefined) x.spent = x.total - (x.left !== undefined ? x.left : x.total);  // pre-wall-clock saves
+        if (x.running && x.startedAt) x.spent = Math.min(x.total, x.spent + (Date.now() - x.startedAt) / 1000);
+        x.running = false; x.startedAt = null;
+      });
+    } else {
+      s.session = null;
+    }
+  }
   return s;
 }
 let saveTimer = null;
@@ -1375,7 +1392,7 @@ const renderLog = (targetId) => {
     try {
       const parsed = JSON.parse(raw);
       const incoming = parsed && parsed.state ? parsed.state : parsed;
-      if (!incoming || typeof incoming !== 'object' || incoming.stage === undefined)
+      if (!incoming || typeof incoming !== 'object' || typeof incoming.sight !== 'object')
         throw new Error('that does not look like a progress file');
       S = normalize({ ...blank(), ...incoming });
       save(); renderSpine(); render();
@@ -3421,11 +3438,6 @@ document.querySelectorAll('nav button').forEach(b => b.onclick = () => switchTab
   v.innerHTML = '<p class="empty-state">Loading\u2026</p>';
   try {
     S = await load();
-    if (S.session) S.session.slots.forEach(x => {
-      if (x.running && x.startedAt) x.spent = Math.min(x.total, x.spent + (Date.now() - x.startedAt) / 1000);
-      if (x.spent === undefined) x.spent = x.total - (x.left !== undefined ? x.left : x.total);  // pre-wall-clock saves
-      x.running = false; x.startedAt = null;
-    });
     // land where the work is. Only the landmark primer and an open session
     // outrank reading music.
     tab = !S.primerSeen ? 'reading' : S.session ? 'progress' : nextAction().tab;
