@@ -2603,9 +2603,13 @@ const INSIGHT_MIN_N = 8, INSIGHT_MIN_OBS = 5, INSIGHT_RATIO = 1.8;
 const stumbleInsight = () => {
   const list = S.stumbles || [];
   if (list.length < INSIGHT_MIN_N) return { enough: false, n: list.length };
+  // stumbles recorded before feat/base existed have neither — this used to be
+  // reached only from the insight panel deep in the page, but newMelody() now
+  // calls it on every melody (for auto-focus), so it can't throw on old data
+  // without breaking the Sight tab from loading at all
   const rows = FEATURES.map(([k, label]) => {
-    const obs = list.reduce((a, s) => a + (s.feat[k] || 0), 0);
-    const exp = list.reduce((a, s) => a + (s.base[k] || 0), 0);
+    const obs = list.reduce((a, s) => a + ((s.feat && s.feat[k]) || 0), 0);
+    const exp = list.reduce((a, s) => a + ((s.base && s.base[k]) || 0), 0);
     return { k, label, obs, exp, ratio: exp > 0.5 ? obs / exp : null };
   }).filter(r => r.ratio !== null && r.obs >= INSIGHT_MIN_OBS)
     .sort((a, b) => b.ratio - a.ratio);

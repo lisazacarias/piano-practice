@@ -131,6 +131,19 @@ test('key selection never repeats back to back', () => {
   }
 });
 
+test('stumble analysis tolerates legacy records with no feat/base', () => {
+  // stumbleInsight() used to be reached only from the insight panel deep in
+  // the page. newMelody() now calls it on every melody (for auto-focus), so
+  // it's on the critical path for the Sight tab to render at all — a stumble
+  // record predating the feat/base fields must not be able to break that.
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  for (let i = 0; i < 8; i++) app.S.stumbles.push({ date: '2026-01-01', step: 0, key: 'C', bar: i % 8 });
+  assert.doesNotThrow(() => app.stumbleInsight(), 'stumbleInsight should not throw on legacy stumbles');
+  assert.doesNotThrow(() => app.effFocus(), 'effFocus should not throw on legacy stumbles');
+  assert.doesNotThrow(() => app.newMelody(), 'newMelody should not throw on legacy stumbles');
+});
+
 test('stumble analysis finds a real pattern', () => {
   const app = loadApp();
   app.S = app.normalize(app.blank());
