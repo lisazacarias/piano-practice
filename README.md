@@ -28,16 +28,21 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
 
 - **Generator** — every bar totals four beats, melodies close on the tonic, the
   motif is restated, a five-finger step never leaves the position, a reaching-out
-  step actually requires the reach rather than merely allowing it, one hand
-  means one staff, eighth notes only appear where the step allows, the raised
-  seventh lands one semitone below each minor tonic, and the score exposes one
-  tappable bar per measure when marking a stumble.
+  step actually requires the reach rather than merely allowing it (and only in
+  one direction per melody, not a thumb-stretch and a pinky-stretch both in
+  eight bars), one hand means one staff, eighth notes only appear where the
+  step allows, `focus:'turn'` measurably raises how often the line changes
+  direction, the raised seventh lands one semitone below each minor tonic, and
+  the score exposes one tappable bar per measure when marking a stumble.
 - **Audio** — every step produces audible non-clipping playback, both staves
   reach the output, written duration is audible in the sound, and the click
   track holds its beat to under 2ms across tempos.
 - **Progress** — steps unlock in order, the directive always names a real tab,
-  every tab renders in every state, keys never repeat back to back, and the
-  stumble analysis finds real patterns while rarely flagging noise.
+  every tab renders in every state, keys never repeat back to back, the
+  stumble analysis finds real patterns while rarely flagging noise, a step
+  clears at 4 of its last 5 outcomes (not a consecutive streak — one stumble
+  ages out instead of resetting everything), and a detected weakness becomes
+  the default melody focus without being asked, until you say otherwise.
 - **Solfège** — the movable-do, do-based-minor syllable for a note is its
   letter-distance from the tonic regardless of the key's own sharps and flats,
   minor correctly uses the altered 3rd/6th/7th (me, le, te), and the drill mode

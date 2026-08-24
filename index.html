@@ -196,7 +196,7 @@ const blank = () => ({
   ignoreSilent: true,
   engine: 'auto',
   sight: { attempts: 0, key: 'random', mode: null, allKeys: false, step: 0,
-           streaks: {}, passed: {}, focus: null, focusChosen: false },
+           history: {}, passed: {}, focus: null, focusChosen: false },
   session: null
 });
 
@@ -232,11 +232,12 @@ const normalize = (s) => {
   if (!Array.isArray(s.drill.rounds)) s.drill.rounds = [];
   if (!Array.isArray(s.log)) s.log = [];
   s.sight = { attempts: 0, key: 'random', mode: null, allKeys: false, step: 0,
-              streaks: {}, passed: {}, focus: null, focusChosen: false, ...(s.sight || {}) };
+              history: {}, passed: {}, focus: null, focusChosen: false, ...(s.sight || {}) };
   if (!Array.isArray(s.stumbles)) s.stumbles = [];
   if (s.sight.mode === 'major') s.sight.mode = null;          // was the old default
   if (typeof s.sight.step !== 'number') s.sight.step = 0;     // pre-ladder saves
-  s.sight.streaks = s.sight.streaks || {};
+  s.sight.history = s.sight.history || {};
+  delete s.sight.streaks;                                     // pre-window-mastery saves
   s.sight.passed = s.sight.passed || {};
   // Saves from the stage era credited progress against stages, which no longer
   // exist. Anything they had cleared maps onto the first steps of the ladder.
@@ -2716,7 +2717,29 @@ const STEPS = [
     why: 'Wide enough that the hand has to move to a new position mid-phrase.' }
 ];
 
-const stepStreak = i => (S.sight.streaks && S.sight.streaks[i]) || 0;
+// Mastery is a rolling window, not a consecutive streak: requiring 3 in a row
+// was tried and was a wall, not a checkpoint, so it was dialed back to a bare
+// 2. A window keeps the evidence a single lucky pass could never provide,
+// without one unlucky read wiping out everything — a stumble just ages out
+// after WINDOW more attempts instead of resetting the count to zero.
+const WINDOW = 5, WINDOW_TARGET = 4;
+const stepWindow = i => (S.sight.history && S.sight.history[i]) || [];
+const stepCleanCount = i => stepWindow(i).filter(x => x === 'ok').length;
+// returns whether this specific outcome is what tipped the step over into passed
+const recordStepOutcome = (i, outcome) => {
+  S.sight.history = S.sight.history || {};
+  const wasPassed = stepPassed(i);
+  const w = stepWindow(i).concat(outcome).slice(-WINDOW);
+  S.sight.history[i] = w;
+  if (w.filter(x => x === 'ok').length >= WINDOW_TARGET) S.sight.passed[i] = true;
+  return !wasPassed && stepPassed(i);
+};
+const windowProgressText = i => {
+  const w = stepWindow(i);
+  return w.length
+    ? `${stepCleanCount(i)} of your last ${w.length} clean (need ${WINDOW_TARGET} of ${WINDOW})`
+    : `${WINDOW_TARGET} of your next ${WINDOW} reads clean`;
+};
 const stepPassed = i => !!(S.sight.passed && S.sight.passed[i]);
 const curStep = () => STEPS[stepIndex()] || STEPS[0];
 
@@ -2736,7 +2759,7 @@ const stepIndex = () => Math.max(0, Math.min(STEPS.length - 1, S.sight.step || 0
 const stepPicker = () => {
   const cur = stepIndex();
   const unlocked = unlockedThrough();
-  const done = stepPassed(cur), streak = stepStreak(cur);
+  const done = stepPassed(cur);
   const cleared = STEPS.filter((_, i) => stepPassed(i)).length;
   return `
     <p class="eyebrow" style="margin-top:22px">What you are reading</p>
@@ -2744,7 +2767,7 @@ const stepPicker = () => {
       <p style="margin:0;font-size:15px"><b>${cur + 1}. ${STEPS[cur].label}</b>
         ${done ? '<span style="color:var(--blue);font-size:13px"> \u2713 cleared</span>' : ''}</p>
       <p style="margin:4px 0 0;font-size:14px;color:var(--soft)">${STEPS[cur].why}</p>
-      ${done ? '' : `<p style="margin:6px 0 0;font-size:14px"><b>${streak} of ${CLEAN_TARGET}</b> clean reads in a row to clear this step.</p>`}
+      ${done ? '' : `<p style="margin:6px 0 0;font-size:14px"><b>${windowProgressText(cur)}</b> to clear this step.</p>`}
     </div>
     <div class="row">
       <button class="btn small" data-step="${Math.max(0, cur - 1)}" ${cur === 0 ? 'disabled' : ''}>\u2190 Easier</button>
@@ -2768,12 +2791,11 @@ const stepPicker = () => {
 // ---------- sight-read view ----------
 let mel = null, melPlaying = false;
 // the melody just judged, so it can be brought back to work on
-let prevMel = null, lastVerdict = null, askBar = false;
+let prevMel = null, lastVerdict = null, askBar = false, justClearedStep = false;
 let keyIdentified = false, keyIdMsg = '';
 // pending "lock and flash" timeout from tapping a bar in activateBar(); cancelled
 // on the next renderSight() or on leaving the sight tab so it can't fire stale
 let stumbleTimer = null;
-const CLEAN_TARGET = 2;   // three in a row was a wall, not a checkpoint
 
 // The ladder step governs the HANDS. Keys and minor are reading difficulty, not
 // hand difficulty, so they follow the stage instead — and by default you never
@@ -2874,7 +2896,7 @@ const renderSight = () => {
       <button class="btn" id="stumble">I stumbled</button>
     </div>
     <div class="stats" style="justify-content:flex-start;margin-top:14px">
-      <div class="stat"><b>${stepStreak(stepIndex())}/${CLEAN_TARGET}</b><span>this step</span></div>
+      <div class="stat"><b>${stepCleanCount(stepIndex())}/${WINDOW_TARGET}</b><span>this step</span></div>
       <div class="stat"><b>${STEPS.filter((_, i) => stepPassed(i)).length}/${STEPS.length}</b><span>steps cleared</span></div>
       <div class="stat"><b>${S.sight.attempts || 0}</b><span>attempted</span></div>
     </div>
@@ -2886,11 +2908,10 @@ const renderSight = () => {
       </div>
     </div>` : ''}
     ${askBar ? '' : (() => {
-      const i = stepIndex(), left = CLEAN_TARGET - stepStreak(i);
-      const justCleared = lastVerdict === 'clean' && stepPassed(i) && left <= 0;
+      const i = stepIndex();
       const nextStep = i + 1 < STEPS.length ? i + 1 : null;
       if (!lastVerdict) return `<p style="font-size:13px;color:var(--soft);margin-top:8px;max-width:58ch">Either answer brings up a fresh melody \u2014 re-reading one you have already seen is not sight-reading, and you can always bring the old one back.</p>`;
-      if (justCleared) return `<div class="now" style="border-left-color:var(--blue);margin-top:12px">
+      if (justClearedStep) return `<div class="now" style="border-left-color:var(--blue);margin-top:12px">
         <p class="eyebrow" style="color:var(--blue)">Step ${i + 1} cleared</p>
         <p style="margin:0;font-size:14px">${nextStep === null
           ? 'That is the last step on the ladder.'
@@ -2901,9 +2922,9 @@ const renderSight = () => {
         </div>
       </div>`;
       return `<div class="now" style="border-left-color:${lastVerdict === 'clean' ? 'var(--blue)' : 'var(--red)'};margin-top:12px">
-        <p style="margin:0;font-size:14px">${lastVerdict === 'clean'
-          ? `Counted \u2014 ${left} more clean read to clear step ${i + 1}. New melody below.`
-          : `Step ${i + 1} back to zero, and a fresh melody is up. Re-reading one you have already seen is not sight-reading.`}</p>
+        <p style="margin:0;font-size:14px">Counted \u2014 ${windowProgressText(i)} to clear step ${i + 1}. ${lastVerdict === 'clean'
+          ? 'New melody below.'
+          : 'A fresh melody is up; re-reading one you have already seen is not sight-reading.'}</p>
         <div class="row" style="margin-top:8px">
           <button class="btn small" id="keeplast">Bring back the last one to work on</button>
         </div>
@@ -2960,7 +2981,8 @@ const renderSight = () => {
       <summary>Why does minor raise its 7th? \u2014 play it and hear why</summary>
       <div style="margin-top:14px">${renderWhy(explainKey)}</div>
     </details>
-    <p style="font-size:13px;color:var(--soft);margin-top:24px;max-width:56ch">Only call it clean if you got through without stopping and without a wrong note you noticed. <b>Two</b> different melodies clean in a row ticks off the this step \u2014 two rather than three, because a checkpoint you keep falling just short of stops being a checkpoint. A stumble resets the count; the point is only that it was not a fluke.</p>`;
+    <p style="font-size:13px;color:var(--soft);margin-top:24px;max-width:56ch">Only call it clean if you got through without stopping and without a wrong note you noticed. Clearing a step takes ${WINDOW_TARGET} clean reads out of your last ${WINDOW} at it \u2014 more evidence than a bare streak, and one stumble does not erase your progress; it just ages out after ${WINDOW} more attempts.</p>`;
+  justClearedStep = false;
 
   v.querySelectorAll('[data-keyid]').forEach(b => b.onclick = () => {
     if (b.dataset.keyid === mel.key.name) { keyIdentified = true; keyIdMsg = ''; }
@@ -3017,8 +3039,7 @@ const renderSight = () => {
   document.getElementById('cleanbtn').onclick = () => {
     const i = stepIndex();
     S.sight.attempts = (S.sight.attempts || 0) + 1;
-    S.sight.streaks[i] = (S.sight.streaks[i] || 0) + 1;
-    if (S.sight.streaks[i] >= CLEAN_TARGET) S.sight.passed[i] = true;
+    justClearedStep = recordStepOutcome(i, 'ok');
     save();
     prevMel = mel; lastVerdict = 'clean';
     stopPlayAlong(true);
@@ -3028,7 +3049,7 @@ const renderSight = () => {
   document.getElementById('stumble').onclick = () => {
     const i = stepIndex();
     S.sight.attempts = (S.sight.attempts || 0) + 1;
-    if (!stepPassed(i)) S.sight.streaks[i] = 0;
+    if (!stepPassed(i)) recordStepOutcome(i, 'no');
     save();
     stopPlayAlong(true);
     if (tapState !== 'off') stopRhythm();
@@ -3199,8 +3220,8 @@ const renderProgress = () => {
             <span class="stagenum">${done ? '\u2713' : i + 1}</span>
             <span class="stagename">${s.label}</span>
             <span class="badge ${done ? 'done' : now ? 'now' : ''}">${
-              done ? 'cleared' : now ? 'current \u00b7 ' + stepStreak(i) + '/' + CLEAN_TARGET
-              : locked ? 'locked' : stepStreak(i) + '/' + CLEAN_TARGET}</span>
+              done ? 'cleared' : now ? 'current \u00b7 ' + stepCleanCount(i) + '/' + WINDOW_TARGET
+              : locked ? 'locked' : stepCleanCount(i) + '/' + WINDOW_TARGET}</span>
           </button>
           ${now ? `<div class="stagebody"><p>${s.why}</p>
             <p style="font-size:13px;color:var(--soft)">${s.keys.length === 1 ? 'Key of ' + s.keys[0]
@@ -3239,9 +3260,8 @@ const nextAction = () => {
   if (cur !== next && stepPassed(cur)) return { tab: 'sight',
     text: `Step ${cur + 1} is cleared. Step ${next + 1} of ${STEPS.length} \u2014 ${STEPS[next].label} \u2014 is where the work is now.` };
 
-  const left = CLEAN_TARGET - stepStreak(cur);
   if (!stepPassed(cur)) return { tab: 'sight',
-    text: `Step ${cur + 1} of ${STEPS.length}: ${STEPS[cur].label}. ${left} more clean read${left === 1 ? '' : 's'} in a row clears it and opens the next.` };
+    text: `Step ${cur + 1} of ${STEPS.length}: ${STEPS[cur].label}. ${windowProgressText(cur)} clears it and opens the next.` };
 
   if (!loggedToday) return { tab: 'practice',
     text: 'Reading is moving. Pick how long you have and work the slots \u2014 the repertoire slot is the one the app cannot do for you.' };

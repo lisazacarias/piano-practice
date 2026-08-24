@@ -2,6 +2,37 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { loadApp } from './harness.mjs';
 
+test('a step clears at 4 of its last 5 outcomes, even with one miss between', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  const outcomes = ['ok', 'ok', 'no', 'ok'];
+  outcomes.forEach(o => app.recordStepOutcome(0, o));
+  assert.equal(app.stepPassed(0), false, 'should not pass on 3 clean out of 4');
+  assert.equal(app.recordStepOutcome(0, 'ok'), true, 'the 4th clean in the window should tip it over');
+  assert.equal(app.stepPassed(0), true);
+});
+
+test('a stumble ages out of the window instead of resetting progress to zero', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.recordStepOutcome(0, 'no');
+  app.recordStepOutcome(0, 'ok');
+  app.recordStepOutcome(0, 'ok');
+  app.recordStepOutcome(0, 'ok');
+  assert.equal(app.stepPassed(0), false, '3 clean out of 4 (one of them a stumble) should not pass yet');
+  app.recordStepOutcome(0, 'ok');
+  assert.equal(app.stepPassed(0), true,
+    'the early stumble should not have zeroed anything — 4 of the last 5 is enough');
+});
+
+test('the window only ever tracks the most recent attempts', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  ['ok', 'ok', 'ok', 'ok', 'ok', 'no', 'no'].forEach(o => app.recordStepOutcome(0, o));
+  assert.equal(app.stepWindow(0).length, app.WINDOW, 'window should be capped, not grow forever');
+  assert.deepEqual(app.stepWindow(0), ['ok', 'ok', 'ok', 'no', 'no'], 'should keep only the most recent entries');
+});
+
 test('clearing a step unlocks exactly the next one', () => {
   const app = loadApp();
   app.S = app.normalize(app.blank());

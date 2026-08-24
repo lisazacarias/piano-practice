@@ -65,17 +65,18 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
   const body = script.slice(0, script.lastIndexOf('(async () => {'));
   const names = Object.keys(sandbox);
   const exposed = [
-    'STEPS', 'KEYS', 'KEYS_ALL', 'RHYTHMS', 'CLEAN_TARGET', 'WAV_RATE', 'MIDDLE_C',
+    'STEPS', 'KEYS', 'KEYS_ALL', 'RHYTHMS', 'WAV_RATE', 'MIDDLE_C',
     'blank', 'normalize', 'genMelody', 'melodyBars', 'melodySVG', 'melodySeq',
     'keyByName', 'keyAlter', 'clefsFor', 'fingerPlan', 'fingeringDiagram',
     'rhythmOnsets', 'rhythmTrack', 'renderPlayAlong', 'renderClickTrack', 'renderNotes',
     'encodeWav', 'barFeatures', 'melodyBaseline', 'recordStumble', 'stumbleInsight',
-    'stepIndex', 'stepPassed', 'stepStreak', 'unlockedThrough', 'curStep',
+    'stepIndex', 'stepPassed', 'unlockedThrough', 'curStep',
     'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'newMelody',
     'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
     'startSession', 'toggleSlot', 'solfegeSyllable', 'MINOR_OK', 'solfegeStaffSVG',
     'solfegeHTML', 'melKeyLabel', 'drillStaffSVG', 'keySigStaffSVG', 'renderVerdictOnly',
-    'effFocus'
+    'effFocus', 'WINDOW', 'WINDOW_TARGET', 'stepWindow', 'stepCleanCount',
+    'recordStepOutcome', 'windowProgressText'
   ];
   const fn = new Function(...names, `${body}
     return { ${exposed.join(', ')},
