@@ -36,9 +36,10 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
   the score exposes one tappable bar per measure when marking a stumble.
 - **Audio** — every step produces audible non-clipping playback, both staves
   reach the output, written duration is audible in the sound, the click track
-  holds its beat to under 2ms across tempos, and bass notes get a loudness
-  boost (tapering to none by middle C) so they don't sound quieter than
-  treble at the same linear gain.
+  holds its beat to under 2ms across tempos, bass notes get a loudness boost
+  (tapering to none by middle C, capped short of the shared limiter) so they
+  don't sound quieter than treble at the same linear gain, and every ladder
+  step's melody-plus-click playback stays clear of that limiter.
 - **Progress** — steps unlock in order, the directive always names a real tab,
   every tab renders in every state, keys never repeat back to back, the
   stumble analysis finds real patterns while rarely flagging noise, a step

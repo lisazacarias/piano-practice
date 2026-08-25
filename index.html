@@ -293,9 +293,13 @@ const midiOf = d => (octOf(d) + 1) * 12 + SEMI[letterOf(d)];
 // amplitude (equal-loudness contours), and both synthesis paths otherwise use
 // one fixed peak gain regardless of pitch — without this, bass notes are
 // genuinely harder to hear, not just an EQ preference. Unboosted above middle
-// C; capped at 6dB (2x) so the lowest notes stay clear of the limiter instead
-// of just getting louder until they distort.
-const loudnessBoost = (midi) => Math.pow(10, Math.min(6, Math.max(0, 60 - midi) * 0.3) / 20);
+// C, ramping to +8dB at the app's lowest playable note (E2) — a first, milder
+// attempt still measured out as much quieter than the metronome in practice.
+// Deliberately stops at 8dB rather than chasing full equal-loudness parity
+// (15-25dB at these frequencies): the shared soft limiter has no per-voice
+// headroom, so pushing further starts audibly compressing a bass note held
+// under a treble one in two-hand playback.
+const loudnessBoost = (midi) => Math.pow(10, Math.min(8, Math.max(0, 60 - midi) * 0.4) / 20);
 let ctx = null, audioReady = false;
 
 const ensureCtx = () => {
@@ -2284,7 +2288,7 @@ const renderPlayAlong = (mel, bpm, mode) => {
       midi: x.midi, at: 4 * spb + x.beat * spb, len: x.dur * spb
     }));
     const notes = renderNotes(events, rate);
-    for (let i = 0; i < notes.length && i < n; i++) out[i] += notes[i] * 0.9;
+    for (let i = 0; i < notes.length && i < n; i++) out[i] += notes[i];
   }
 
   for (let i = 0; i < n; i++) out[i] = Math.tanh(out[i]);
