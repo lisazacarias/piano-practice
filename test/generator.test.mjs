@@ -169,3 +169,16 @@ test('askBar draws one tappable hit-region per bar, sized to the score', () => {
       `${step.hand}: hit-region should span the full ${expectedHeight}px staff height`);
   });
 });
+
+test('a left-hand-alone step is described as one hand, not a two-hand piece', () => {
+  const step = app.STEPS.find(s => s.hand === 'left');
+  app.S.sight.step = app.STEPS.indexOf(step);
+  app.S.primerSeen = true;
+  app.newMelody();
+  app.keyIdentified = true;
+  app.tab = 'sight';
+  app.renderSight();
+  const html = app.store.view.innerHTML;
+  assert.ok(/Left hand alone/.test(html), `expected "Left hand alone", got: ${html.slice(0, 400)}`);
+  assert.ok(!/holds one note per bar/.test(html), 'a single left-hand melody has no other hand to hold a note');
+});

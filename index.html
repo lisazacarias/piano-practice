@@ -2931,12 +2931,9 @@ const renderSight = () => {
     ? `${mel.key.relName} minor \u2014 same signature as ${mel.key.name} major (${sigDesc}), different home note. It ends on ${mel.key.relName}, not ${mel.key.name}.` +
       (raised ? ` The accidentals you can see are the raised 7th: the signature never mentioned them, and that is the giveaway that this is minor.` : '')
     : `${mel.key.name} major: ${sigDesc}. The signature says so once, at the start, and means it for every bar \u2014 nothing is printed on the notes themselves.`;
-  const other = mel.hand === 'left' ? 'Right' : 'Left';
-  const hands = !mel.bass
-    ? `${mel.hand === 'left' ? 'Left' : 'Right'} hand alone.`
-    : mel.hand === 'both'
-      ? 'Both hands moving. Learn each alone first, then together.'
-      : `Tune in the ${mel.hand === 'left' ? 'left' : 'right'} hand; ${other.toLowerCase()} hand holds one note per bar. Learn each alone first, then together.`;
+  const hands = mel.hand === 'both'
+    ? 'Both hands moving. Learn each alone first, then together.'
+    : `${mel.hand === 'left' ? 'Left' : 'Right'} hand alone.`;
 
   v.innerHTML = `
     <p class="eyebrow">Generated \u00b7 eight bars${keyIdentified ? ` \u00b7 ${melKeyLabel(mel)}` : ''} \u00b7 step ${stepIndex() + 1}</p>
