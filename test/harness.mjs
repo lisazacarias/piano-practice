@@ -71,7 +71,7 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     'rhythmOnsets', 'rhythmTrack', 'renderPlayAlong', 'renderClickTrack', 'renderNotes',
     'encodeWav', 'barFeatures', 'melodyBaseline', 'recordStumble', 'stumbleInsight',
     'stepIndex', 'stepPassed', 'unlockedThrough', 'curStep',
-    'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'renderSight', 'newMelody',
+    'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'renderSight', 'insightPanel', 'newMelody',
     'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
     'startSession', 'toggleSlot', 'finishSlot', 'refreshSession', 'renderNow', 'SLOTS',
     'solfegeSyllable', 'MINOR_OK', 'solfegeStaffSVG',

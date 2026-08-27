@@ -168,6 +168,28 @@ test('stumble analysis finds a real pattern', () => {
   assert.ok(top.ratio > 1.5, `leap ratio only ${top.ratio.toFixed(2)}`);
 });
 
+test('the insight panel renders when a strong pattern is on a feature with no weighting to offer', () => {
+  const app = loadApp();
+  app.S = app.normalize(app.blank());
+  app.S.sight.step = 6;
+  // 'accidental' has no focusableFeature() case, so a stumble history
+  // dominated by it exercises the panel's "no weighting to offer for that"
+  // branch instead of "practise this on purpose". Stumbles are constructed
+  // directly since stumbleInsight only ever reads the stored feat/base, not
+  // the melody that produced them.
+  for (let k = 0; k < 16; k++) {
+    app.S.stumbles.push({
+      feat: { leap: 0, outPos: 0, blackKey: 0, eighths: 0, accidental: 1, turn: 0, ledger: 0 },
+      base: { leap: 0.3, outPos: 0.2, blackKey: 0.3, eighths: 0, accidental: 0.1, turn: 0.3, ledger: 0.1 }
+    });
+  }
+  const top = app.stumbleInsight().rows[0];
+  assert.equal(top.k, 'accidental', `expected accidental on top, got ${top.k}`);
+  assert.doesNotThrow(() => app.insightPanel(), 'panel should not throw when the strongest feature is not focusable');
+  const html = app.insightPanel();
+  assert.ok(/no weighting to offer/.test(html), 'panel should explain why nothing is offered to practise on purpose');
+});
+
 test('a detected weakness becomes the default focus, without being asked', () => {
   const app = loadApp();
   app.S = app.normalize(app.blank());

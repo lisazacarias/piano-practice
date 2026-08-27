@@ -2731,7 +2731,7 @@ const insightPanel = () => {
           : cur
           ? 'Melodies are automatically weighted toward your strongest weakness. Choose one yourself, or Ordinary mix, to override this.'
           : 'Weighting melodies toward a weakness is the fastest way to fix it, and the least pleasant. Short bursts.'}</p>` : ''}
-      ${strong.length && !strong.some(r => focusable(r.k)) ? `<p style="font-size:13px;color:var(--soft);margin-top:10px;max-width:58ch">There is no weighting to offer for that at your current step \u2014 ${
+      ${strong.length && !strong.some(r => focusableFeature(r.k)) ? `<p style="font-size:13px;color:var(--soft);margin-top:10px;max-width:58ch">There is no weighting to offer for that at your current step \u2014 ${
         strong[0].k === 'eighths' ? 'eighth notes only appear from step 9 onward' :
         strong[0].k === 'outPos' ? 'you are already at the widest reach' :
         'it is not something the generator can dial up'}.</p>` : ''}
