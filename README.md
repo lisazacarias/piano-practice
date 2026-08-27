@@ -41,11 +41,15 @@ browser, so they exercise the shipped code rather than a copy of it. They cover:
   don't sound quieter than treble at the same linear gain, and every ladder
   step's melody-plus-click playback stays clear of that limiter.
 - **Progress** — steps unlock in order, the directive always names a real tab,
-  every tab renders in every state, keys never repeat back to back, the
-  stumble analysis finds real patterns while rarely flagging noise, a step
+  every tab renders in every state, keys never repeat back to back, a step
   clears at 4 of its last 5 outcomes (not a consecutive streak — one stumble
   ages out instead of resetting everything), and a detected weakness becomes
   the default melody focus without being asked, until you say otherwise.
+- **Stumble analysis** — finds real patterns across nine features (leap, leap
+  direction, hand position, weak-finger use, black keys, rhythm, accidentals,
+  line direction, ledger lines) while rarely flagging noise, and the panel
+  still renders when the strongest pattern is on a feature — like a downward
+  leap — that the generator has no dial to weight toward.
 - **Solfège** — the movable-do, do-based-minor syllable for a note is its
   letter-distance from the tonic regardless of the key's own sharps and flats,
   minor correctly uses the altered 3rd/6th/7th (me, le, te), and the drill mode

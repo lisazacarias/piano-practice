@@ -2587,7 +2587,9 @@ const wireRhythm = (root) => {
 // "I keep messing up" into something with a cause attached.
 const FEATURES = [
   ['leap',      'a leap of a fourth or more'],
+  ['leapDown',  'a leap of a fourth or more, going down'],
   ['outPos',    'a note outside the hand position'],
+  ['weakFinger','a note taken with the 4th or 5th finger'],
   ['blackKey',  'a black key'],
   ['eighths',   'eighth notes'],
   ['accidental','an accidental the key signature did not warn you about'],
@@ -2604,10 +2606,11 @@ const barFeatures = (mel, barIdx) => {
   const p = fingerPlan(mel);
   const notes = prev ? [prev].concat(bar) : bar.slice();
 
-  let leap = 0, turn = 0, lastDir = 0;
+  let leap = 0, leapDown = 0, turn = 0, lastDir = 0;
   for (let i = 1; i < notes.length; i++) {
     const d = notes[i].d - notes[i - 1].d;
     leap = Math.max(leap, Math.abs(d));
+    if (d <= -3) leapDown = 1;
     const dir = Math.sign(d);
     if (dir && lastDir && dir !== lastDir) turn++;
     if (dir) lastDir = dir;
@@ -2615,10 +2618,13 @@ const barFeatures = (mel, barIdx) => {
   const isBlack = n => (n.alt !== undefined ? n.alt : (alter[letterOf(n.d)] || 0)) !== 0;
   const yFn = mel.hand === 'left' && mel.bass ? yBass : yTreble;
   const top = mel.hand === 'left' && mel.bass ? 90 : 30, bot = mel.hand === 'left' && mel.bass ? 130 : 70;
+  const fingerOf = n => { const f = p.melMap.get(p.pitch(n)); return f ? f.finger : null; };
 
   return {
     leap: leap >= 3 ? 1 : 0,
+    leapDown,
     outPos: bar.some(n => (n.d - p.tonicD) < 0 || (n.d - p.tonicD) > 4) ? 1 : 0,
+    weakFinger: bar.some(n => fingerOf(n) === 4 || fingerOf(n) === 5) ? 1 : 0,
     blackKey: bar.some(isBlack) ? 1 : 0,
     eighths: bar.some(n => n.dur === 0.5) ? 1 : 0,
     accidental: bar.some(n => n.alt !== undefined) ? 1 : 0,

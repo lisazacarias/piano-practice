@@ -69,7 +69,7 @@ export function loadApp({ userAgent = 'Mozilla/5.0 (Macintosh)', withStorage = f
     'blank', 'normalize', 'genMelody', 'melodyBars', 'melodySVG', 'melodySeq',
     'keyByName', 'keyAlter', 'clefsFor', 'fingerPlan', 'fingeringDiagram',
     'rhythmOnsets', 'rhythmTrack', 'renderPlayAlong', 'renderClickTrack', 'renderNotes',
-    'encodeWav', 'barFeatures', 'melodyBaseline', 'recordStumble', 'stumbleInsight',
+    'encodeWav', 'barFeatures', 'FEATURES', 'melodyBaseline', 'recordStumble', 'stumbleInsight',
     'stepIndex', 'stepPassed', 'unlockedThrough', 'curStep',
     'allowedKeys', 'defaultMode', 'nextAction', 'render', 'renderSpine', 'renderSight', 'insightPanel', 'newMelody',
     'dOf', 'letterOf', 'octOf', 'midiOf', 'save', 'load', 'drawKey',
